@@ -10,8 +10,10 @@
 		"prepare": "svelte-kit sync || echo ''",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
-		"test:unit": "vitest",
-		"test": "npm run test:unit -- --run"
+		"test": "vitest",
+		"db:push": "drizzle-kit push",
+		"db:generate": "drizzle-kit generate",
+		"db:migrate": "drizzle-kit migrate"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.4",
@@ -21,6 +23,7 @@
 		"@sveltejs/vite-plugin-svelte": "^7.0.0",
 		"@types/node": "^22",
 		"@vitest/browser-playwright": "^4.1.3",
+		"drizzle-kit": "^0.31.10",
 		"eslint": "^10.2.0",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.17.0",
@@ -35,6 +38,8 @@
 	},
 	"dependencies": {
 		"better-sqlite3": "^12.9.0",
+		"drizzle-orm": "^0.45.2",
+		"mysql2": "^3.22.1",
 		"sharp": "^0.34.5"
 	}
 }

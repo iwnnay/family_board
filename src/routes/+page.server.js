@@ -1,8 +1,8 @@
 import { getChoresWithStatus, completeChore } from '$lib/server/db';
 import { fail } from '@sveltejs/kit';
 
-export function load() {
-	return { chores: getChoresWithStatus() };
+export async function load() {
+	return { chores: await getChoresWithStatus() };
 }
 
 export const actions = {
@@ -18,14 +18,11 @@ export const actions = {
 		}
 
 		if (member_id_from_form) {
-			cookies.set('member_id', String(member_id_from_form), {
-				path: '/',
-				maxAge: 60 * 60 * 24 * 365
-			});
+			cookies.set('member_id', String(member_id_from_form), { path: '/', maxAge: 60 * 60 * 24 * 365 });
 			member_id = Number(member_id_from_form);
 		}
 
-		completeChore(chore_id, member_id);
+		await completeChore(chore_id, member_id);
 		return { success: true };
 	},
 

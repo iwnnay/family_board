@@ -1,5 +1,5 @@
 import { getStats } from '$lib/server/db';
 
-export function load() {
-	return { stats: getStats() };
+export async function load() {
+	return { stats: await getStats() };
 }

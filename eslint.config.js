@@ -25,8 +25,8 @@ export default defineConfig([
 	},
 
 	{
-		// Override or add rule settings here, such as:
-		// 'svelte/button-has-type': 'error'
-		rules: {}
+		rules: {
+			curly: ['error', 'all'] // always require braces on if/else/for/while
+		}
 	}
 ]);
