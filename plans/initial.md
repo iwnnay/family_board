@@ -1,11 +1,13 @@
-# Chores App
+# Family Board
 
 ## Left Nav
-Main
-Stats
----
-Manage Chores
-Manage Family button
+At the top:
+- Main
+- Stats
+
+Collapsed at the bottom under "Settings":
+- Manage Chores
+- Manage Family button
 
 ## Main Screen
 There we be a grid of chores that need to be completed in tiny boxes
@@ -56,3 +58,6 @@ The list items will have all the fields from the chores
 | id | int | ID for family member |
 | name | Name of family member |
 
+
+## Tech Stack
+This will be a svelte app with a sqllite database.
