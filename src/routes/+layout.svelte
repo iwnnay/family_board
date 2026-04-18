@@ -25,6 +25,9 @@
 				</li>
 				<li>
 					<a href="/stats" class:active={page.url.pathname === '/stats'}>Stats</a>
+					</li>
+					<li>
+						<a href="/notes" class:active={page.url.pathname === '/notes'}>Notes</a>
 				</li>
 			</ul>
 		</div>

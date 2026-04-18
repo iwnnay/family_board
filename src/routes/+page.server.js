@@ -1,8 +1,9 @@
-import { getChoresWithStatus, completeChore } from '$lib/server/db';
+import { getChoresWithStatus, completeChore, getRecentEvents } from '$lib/server/db';
 import { fail } from '@sveltejs/kit';
 
 export async function load() {
-	return { chores: await getChoresWithStatus() };
+	const [chores, events] = await Promise.all([getChoresWithStatus(), getRecentEvents()]);
+	return { chores, events };
 }
 
 export const actions = {

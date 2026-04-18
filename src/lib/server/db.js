@@ -10,6 +10,7 @@ import * as mysqlSchema from './schema/mysql.js';
 import * as familyQ from './queries/family.js';
 import * as choresQ from './queries/chores.js';
 import * as completionsQ from './queries/completions.js';
+import * as notesQ from './queries/notes.js';
 
 // ---------------------------------------------------------------------------
 // Raw SQL used only for dev SQLite setup (avoids needing drizzle-kit push)
@@ -33,6 +34,38 @@ const SQLITE_SETUP_SQL = `
     chore_id     INTEGER NOT NULL REFERENCES chores(id) ON DELETE CASCADE,
     completed_by INTEGER NOT NULL REFERENCES family(id) ON DELETE CASCADE,
     completed_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS notes (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    title      TEXT,
+    summary    TEXT,
+    color      TEXT,
+    created_by INTEGER REFERENCES family(id) ON DELETE SET NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS note_bodies (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    note_id    INTEGER NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+    subtitle   TEXT,
+    body       TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS user_pins (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id   INTEGER NOT NULL REFERENCES family(id) ON DELETE CASCADE,
+    rel_id    INTEGER NOT NULL,
+    rel_type  TEXT NOT NULL,
+    is_global INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS recent_events (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    type       TEXT NOT NULL,
+    message    TEXT NOT NULL,
+    rel_id     INTEGER NOT NULL,
+    rel_type   TEXT NOT NULL,
+    action     TEXT NOT NULL,
+    created_at TEXT NOT NULL
   );
 `;
 
@@ -84,3 +117,11 @@ export const getChoresWithStatus = (...a) => choresQ.getChoresWithStatus(db, ...
 
 export const completeChore = (...a) => completionsQ.completeChore(db, ...a);
 export const getStats = (...a) => completionsQ.getStats(db, ...a);
+
+export const getNotes = (...a) => notesQ.getNotes(db, ...a);
+export const getNoteWithBodies = (...a) => notesQ.getNoteWithBodies(db, ...a);
+export const createNote = (...a) => notesQ.createNote(db, ...a);
+export const updateNote = (...a) => notesQ.updateNote(db, ...a);
+export const deleteNote = (...a) => notesQ.deleteNote(db, ...a);
+export const togglePin = (...a) => notesQ.togglePin(db, ...a);
+export const getRecentEvents = (...a) => notesQ.getRecentEvents(db, ...a);

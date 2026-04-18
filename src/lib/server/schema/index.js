@@ -12,4 +12,4 @@ import * as mysqlSchema from './mysql.js';
 const url = process.env.DATABASE_URL ?? '';
 export const isMysql = url.startsWith('mysql://') || url.startsWith('mariadb://');
 
-export const { family, chores, chores_completed } = isMysql ? mysqlSchema : sqliteSchema;
+export const { family, chores, chores_completed, notes, note_bodies, user_pins, recent_events } = isMysql ? mysqlSchema : sqliteSchema;

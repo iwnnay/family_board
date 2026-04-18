@@ -1,12 +1,86 @@
 <script>
-	import { applyAction, deserialize } from '$app/forms';
+	import { applyAction, deserialize, enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
-	import { getHue } from '$lib/colors.js';
+	import { getHue, COLORS } from '$lib/colors.js';
 
 	let { data } = $props();
 
 	let showMemberModal = $state(false);
 	let pendingChoreId = $state(null);
+
+	// ── note modals ───────────────────────────────────────────────────────────
+	let noteModal = $state(null); // null | 'read' | 'edit'
+	let activeNote = $state(null);
+
+	// edit form state
+	const emptyBody = () => ({ subtitle: '', body: '' });
+	let formTitle = $state('');
+	let formColor = $state('');
+	let formBodies = $state([emptyBody()]);
+	let colorPickerOpen = $state(false);
+
+	async function openNote(ev) {
+		const res = await fetch(`/notes?/loadNote`, {
+			method: 'POST',
+			body: new URLSearchParams({ id: String(ev.rel_id) }),
+			headers: { 'x-sveltekit-action': '1' }
+		});
+		const result = deserialize(await res.text());
+		if (result?.data?.note) {
+			activeNote = result.data.note;
+			noteModal = 'read';
+		}
+	}
+
+	function openEdit(note) {
+		formTitle = note.title ?? '';
+		formColor = note.color ?? '';
+		formBodies = note.bodies?.length ? note.bodies.map((b) => ({ subtitle: b.subtitle ?? '', body: b.body ?? '' })) : [emptyBody()];
+		noteModal = 'edit';
+	}
+
+	function closeNoteModal() {
+		noteModal = null;
+		activeNote = null;
+	}
+
+	function addBody(prepend = false) {
+		formBodies = prepend ? [emptyBody(), ...formBodies] : [...formBodies, emptyBody()];
+	}
+
+	function removeBody(i) {
+		formBodies = formBodies.filter((_, idx) => idx !== i);
+		if (formBodies.length === 0) {
+			formBodies = [emptyBody()];
+		}
+	}
+
+	function noteCardStyle(note) {
+		if (!note.color) return '';
+		const hue = getHue(note.color);
+		return `background: hsl(${hue} 60% 95%); border-color: hsl(${hue} 45% 72%);`;
+	}
+
+	function noteHeaderStyle(note) {
+		if (!note.color) return '';
+		const hue = getHue(note.color);
+		return `background: hsl(${hue} 50% 88%);`;
+	}
+
+	function colorDotStyle(colorKey) {
+		if (!colorKey) return 'background: #e5e7eb; border-color: #d1d5db;';
+		const hue = getHue(colorKey);
+		return `background: hsl(${hue} 65% 80%); border-color: hsl(${hue} 45% 60%);`;
+	}
+
+	function swatchStyle(colorKey) {
+		const hue = getHue(colorKey);
+		return `background: hsl(${hue} 65% 80%); border-color: hsl(${hue} 45% 60%);`;
+	}
+
+	function fmtDate(str) {
+		return new Date(str).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+	}
 
 	const FREQ_LABELS = {
 		none: 'Once',
@@ -75,6 +149,17 @@
 	let dueChores = $derived(data.chores.filter((c) => c.status === 'due'));
 	let completedChores = $derived(data.chores.filter((c) => c.status === 'completed'));
 </script>
+
+{#if data.events.length > 0}
+	<div class="events-bar">
+		{#each data.events as ev (ev.id)}
+			<button class="event-chip" onclick={() => openNote(ev)}>
+				<span class="event-msg">{ev.message}</span>
+				<span class="event-time">{new Date(ev.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+			</button>
+		{/each}
+	</div>
+{/if}
 
 <div class="page-header">
 	<h1>Chores</h1>
@@ -161,6 +246,114 @@
 				{#each data.family as member}
 					<button class="member-btn" onclick={() => completeWithMember(member.id)}>
 						{member.name}
+					</button>
+				{/each}
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- ── note read modal ────────────────────────────────────────────────────── -->
+{#if noteModal === 'read' && activeNote}
+	<div class="modal-overlay" role="button" tabindex="-1" onclick={closeNoteModal} onkeydown={() => {}}>
+		<div class="note-modal" style={noteCardStyle(activeNote)} role="dialog" onclick={(e) => e.stopPropagation()} onkeydown={() => {}}>
+			<div class="note-modal-toolbar" style={noteHeaderStyle(activeNote)}>
+				<span class="note-modal-title">{activeNote.title || 'Untitled'}</span>
+				<div class="note-modal-actions">
+					<form method="POST" action="/notes?/pin" use:enhance={() => () => invalidateAll()}>
+						<input type="hidden" name="id" value={activeNote.id} />
+						<button type="submit" class="btn-ghost">{activeNote.pinned ? '📌 Unpin' : '📍 Pin'}</button>
+					</form>
+					<button class="btn-ghost" onclick={() => openEdit(activeNote)}>✏️ Edit</button>
+					<button class="btn-ghost" onclick={closeNoteModal}>✕</button>
+				</div>
+			</div>
+			<div class="note-read-body">
+				<p class="note-read-date">Updated {fmtDate(activeNote.updated_at)}</p>
+				{#each activeNote.bodies ?? [] as section (section.id)}
+					{#if section.subtitle}
+						<h4 class="note-section-subtitle">{section.subtitle}</h4>
+					{/if}
+					{#if section.body}
+						<p class="note-section-body">{section.body}</p>
+					{/if}
+				{/each}
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- ── note edit modal ────────────────────────────────────────────────────── -->
+{#if noteModal === 'edit' && activeNote}
+	<div class="modal-overlay" role="button" tabindex="-1" onclick={() => (noteModal = 'read')} onkeydown={() => {}}>
+		<div class="note-modal note-modal-form" role="dialog" onclick={(e) => e.stopPropagation()} onkeydown={() => {}}>
+			<div class="note-modal-toolbar">
+				<span class="note-modal-title">Edit note</span>
+			</div>
+			<form
+				method="POST"
+				action="/notes?/save"
+				use:enhance={() => {
+					return async ({ update }) => {
+						await update();
+						await invalidateAll();
+						closeNoteModal();
+					};
+				}}
+				class="note-edit-form"
+			>
+				<input type="hidden" name="id" value={activeNote.id} />
+
+				<div class="note-title-row">
+					<input class="note-input" type="text" name="title" placeholder="Title" bind:value={formTitle} />
+					<button type="button" class="color-dot" style={colorDotStyle(formColor)} title="Pick color" onclick={() => (colorPickerOpen = true)}></button>
+				</div>
+				<input type="hidden" name="color" value={formColor} />
+
+				<button type="button" class="btn-ghost add-body-btn" onclick={() => addBody(true)}>+ Add section</button>
+				{#each formBodies as b, i (i)}
+					<div class="note-body-section">
+						<div class="note-body-head">
+							<input class="note-input note-input-sm" type="text" name="subtitle" placeholder="Subtitle (optional)" bind:value={b.subtitle} />
+							{#if formBodies.length > 1}
+								<button type="button" class="btn-ghost" onclick={() => removeBody(i)}>✕</button>
+							{/if}
+						</div>
+						<textarea class="note-textarea" name="body" placeholder="Body" rows="4" bind:value={b.body}></textarea>
+					</div>
+				{/each}
+				<button type="button" class="btn-ghost add-body-btn" onclick={() => addBody()}>+ Add section</button>
+
+				<div class="note-edit-footer">
+					<button type="button" class="btn btn-cancel" onclick={() => (noteModal = 'read')}>Cancel</button>
+					<button type="submit" class="btn btn-save">Save</button>
+				</div>
+			</form>
+		</div>
+	</div>
+{/if}
+
+<!-- ── color picker modal ─────────────────────────────────────────────────── -->
+{#if colorPickerOpen}
+	<div class="modal-overlay color-overlay" role="button" tabindex="-1" onclick={() => (colorPickerOpen = false)} onkeydown={() => {}}>
+		<div class="color-modal" role="dialog" onclick={(e) => e.stopPropagation()} onkeydown={() => {}}>
+			<div class="color-modal-head">
+				<span class="note-modal-title">Pick a color</span>
+				{#if formColor}
+					<button type="button" class="btn-ghost" onclick={() => { formColor = ''; colorPickerOpen = false; }}>✕ Clear</button>
+				{/if}
+			</div>
+			<div class="color-picker-grid">
+				{#each COLORS as c (c.key)}
+					<button
+						type="button"
+						class="swatch-lg"
+						class:swatch-selected={formColor === c.key}
+						style={swatchStyle(c.key)}
+						title={c.label}
+						onclick={() => { formColor = c.key; colorPickerOpen = false; }}
+					>
+						<span class="swatch-label">{c.label}</span>
 					</button>
 				{/each}
 			</div>
@@ -299,6 +492,45 @@
 		color: #94a3b8;
 	}
 
+	.events-bar {
+		display: flex;
+		gap: 0.5rem;
+		overflow-x: auto;
+		padding-bottom: 0.75rem;
+		margin-bottom: 1rem;
+		scrollbar-width: thin;
+	}
+
+	.event-chip {
+		flex-shrink: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.15rem;
+		padding: 0.4rem 0.75rem;
+		background: #fff;
+		border: 1px solid #d1d5db;
+		border-radius: 6px;
+		cursor: pointer;
+		font-size: 0.8rem;
+		text-decoration: none;
+		transition: background 0.15s;
+	}
+
+	.event-chip:hover {
+		background: #f3f4f6;
+	}
+
+	.event-msg {
+		font-weight: 600;
+		color: #374151;
+	}
+
+	.event-time {
+		color: #9ca3af;
+		font-size: 0.72rem;
+	}
+
 	.empty-state a {
 		color: #3b82f6;
 		text-decoration: underline;
@@ -356,5 +588,266 @@
 	.member-btn:hover {
 		border-color: #3b82f6;
 		background: #eff6ff;
+	}
+
+	/* ── note read modal ── */
+	.note-modal {
+		background: #fff;
+		border-radius: 12px;
+		width: min(620px, 95vw);
+		max-height: 85vh;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+	}
+
+	.note-modal-toolbar {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.65rem 0.85rem;
+		border-radius: 12px 12px 0 0;
+		background: #f9fafb;
+		border-bottom: 1px solid #e5e7eb;
+		flex-shrink: 0;
+	}
+
+	.note-modal-title {
+		font-weight: 700;
+		font-size: 1rem;
+		color: #1f2937;
+		flex: 1;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.note-modal-actions {
+		display: flex;
+		gap: 0.25rem;
+		flex-shrink: 0;
+		align-items: center;
+	}
+
+	.note-read-body {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		padding: 1rem 1.25rem;
+		overflow-y: auto;
+		flex: 1;
+	}
+
+	.note-read-date {
+		font-size: 0.78rem;
+		color: #9ca3af;
+	}
+
+	.note-section-subtitle {
+		font-size: 1rem;
+		font-weight: 600;
+		color: #374151;
+		margin-top: 0.5rem;
+	}
+
+	.note-section-body {
+		font-size: 0.92rem;
+		color: #4b5563;
+		white-space: pre-wrap;
+		line-height: 1.6;
+	}
+
+	.btn-ghost {
+		background: none;
+		border: none;
+		cursor: pointer;
+		font-size: 0.82rem;
+		color: #6b7280;
+		padding: 0.3rem 0.5rem;
+		border-radius: 4px;
+		text-decoration: none;
+	}
+
+	.btn-ghost:hover {
+		background: rgba(0, 0, 0, 0.06);
+		color: #374151;
+	}
+
+	/* ── note edit modal ── */
+	.note-modal-form {
+		padding: 0;
+	}
+
+	.note-edit-form {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		padding: 1rem 1.25rem 1.25rem;
+	}
+
+	.note-title-row {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.note-input {
+		border: 1px solid #d1d5db;
+		border-radius: 6px;
+		padding: 0.45rem 0.65rem;
+		font-size: 0.9rem;
+		width: 100%;
+	}
+
+	.note-input:focus {
+		outline: 2px solid #6b7280;
+		outline-offset: 1px;
+	}
+
+	.note-input-sm {
+		font-size: 0.82rem;
+		padding: 0.3rem 0.5rem;
+	}
+
+	.note-textarea {
+		border: 1px solid #d1d5db;
+		border-radius: 6px;
+		padding: 0.45rem 0.65rem;
+		font-size: 0.9rem;
+		width: 100%;
+		resize: vertical;
+		font-family: inherit;
+	}
+
+	.note-textarea:focus {
+		outline: 2px solid #6b7280;
+		outline-offset: 1px;
+	}
+
+	.color-dot {
+		flex-shrink: 0;
+		width: 28px;
+		height: 28px;
+		border-radius: 50%;
+		border: 2px solid;
+		cursor: pointer;
+		padding: 0;
+		transition: transform 0.1s, box-shadow 0.1s;
+	}
+
+	.color-dot:hover {
+		transform: scale(1.15);
+		box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+	}
+
+	.note-body-section {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+		border-left: 3px solid #e5e7eb;
+		padding-left: 0.75rem;
+		margin-top: 2px;
+	}
+
+	.note-body-head {
+		display: flex;
+		gap: 0.4rem;
+		align-items: center;
+	}
+
+	.add-body-btn {
+		align-self: flex-start;
+		font-size: 0.82rem;
+		color: #6b7280;
+	}
+
+	.note-edit-footer {
+		display: flex;
+		justify-content: space-between;
+		padding-top: 0.25rem;
+	}
+
+	.btn {
+		padding: 0.45rem 1.1rem;
+		border-radius: 6px;
+		font-size: 0.9rem;
+		cursor: pointer;
+		border: 1px solid transparent;
+	}
+
+	.btn-save {
+		background: #374151;
+		color: #fff;
+	}
+
+	.btn-save:hover {
+		background: #1f2937;
+	}
+
+	.btn-cancel {
+		background: #f3f4f6;
+		color: #374151;
+		border-color: #d1d5db;
+	}
+
+	.btn-cancel:hover {
+		background: #e5e7eb;
+	}
+
+	/* ── color picker ── */
+	.color-overlay {
+		z-index: 110;
+	}
+
+	.color-modal {
+		background: #fff;
+		border-radius: 12px;
+		padding: 1rem;
+		width: min(340px, 92vw);
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.color-modal-head {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.color-picker-grid {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 0.5rem;
+	}
+
+	.swatch-lg {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.5rem 0.25rem;
+		border-radius: 8px;
+		border: 2px solid transparent;
+		cursor: pointer;
+		transition: transform 0.1s, box-shadow 0.1s;
+	}
+
+	.swatch-lg:hover {
+		transform: scale(1.05);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+	}
+
+	.swatch-lg.swatch-selected {
+		outline: 2px solid #374151;
+		outline-offset: 2px;
+	}
+
+	.swatch-label {
+		font-size: 0.65rem;
+		color: #374151;
+		font-weight: 500;
 	}
 </style>

@@ -84,7 +84,8 @@ This page is going to be very straight forward.
 # Calendar Events
 An Event will be cast when a calendar entry
 - created
-- updated.
+- updated
+- deleted
 The related info will be:
 - rel_type: Cal Event
 - rel_id: calendar entry id
