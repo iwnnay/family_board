@@ -66,3 +66,20 @@ export const recent_events = mysqlTable('recent_events', {
 	action: varchar('action', { length: 50 }).notNull(),
 	created_at: varchar('created_at', { length: 30 }).notNull()
 });
+
+export const locations = mysqlTable('locations', {
+	id: int('id').primaryKey().autoincrement(),
+	name: varchar('name', { length: 255 }).notNull(),
+	address: varchar('address', { length: 500 }),
+	is_deleted: int('is_deleted').notNull().default(0)
+});
+
+export const calendar_entries = mysqlTable('calendar_entries', {
+	id: int('id').primaryKey().autoincrement(),
+	title: varchar('title', { length: 255 }).notNull(),
+	location_id: int('location_id').references(() => locations.id, { onDelete: 'set null' }),
+	start_time: varchar('start_time', { length: 30 }).notNull(),
+	end_time: varchar('end_time', { length: 30 }).notNull(),
+	description: varchar('description', { length: 2000 }),
+	created_by: int('created_by').references(() => family.id, { onDelete: 'set null' })
+});

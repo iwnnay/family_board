@@ -11,6 +11,7 @@ import * as familyQ from './queries/family.js';
 import * as choresQ from './queries/chores.js';
 import * as completionsQ from './queries/completions.js';
 import * as notesQ from './queries/notes.js';
+import * as calendarQ from './queries/calendar.js';
 
 // ---------------------------------------------------------------------------
 // Raw SQL used only for dev SQLite setup (avoids needing drizzle-kit push)
@@ -67,6 +68,21 @@ const SQLITE_SETUP_SQL = `
     action     TEXT NOT NULL,
     created_at TEXT NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS locations (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    name       TEXT NOT NULL,
+    address    TEXT,
+    is_deleted INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS calendar_entries (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    title       TEXT NOT NULL,
+    location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+    start_time  TEXT NOT NULL,
+    end_time    TEXT NOT NULL,
+    description TEXT,
+    created_by  INTEGER REFERENCES family(id) ON DELETE SET NULL
+  );
 `;
 
 /**
@@ -117,6 +133,18 @@ export const getChoresWithStatus = (...a) => choresQ.getChoresWithStatus(db, ...
 
 export const completeChore = (...a) => completionsQ.completeChore(db, ...a);
 export const getStats = (...a) => completionsQ.getStats(db, ...a);
+
+export const getLocations = (...a) => calendarQ.getLocations(db, ...a);
+export const createLocation = (...a) => calendarQ.createLocation(db, ...a);
+export const updateLocation = (...a) => calendarQ.updateLocation(db, ...a);
+export const deleteLocation = (...a) => calendarQ.deleteLocation(db, ...a);
+
+export const getCalendarEntries = (...a) => calendarQ.getCalendarEntries(db, ...a);
+export const getCalendarEntryById = (...a) => calendarQ.getCalendarEntryById(db, ...a);
+export const createCalendarEntry = (...a) => calendarQ.createCalendarEntry(db, ...a);
+export const updateCalendarEntry = (...a) => calendarQ.updateCalendarEntry(db, ...a);
+export const deleteCalendarEntry = (...a) => calendarQ.deleteCalendarEntry(db, ...a);
+export const duplicateCalendarEntry = (...a) => calendarQ.duplicateCalendarEntry(db, ...a);
 
 export const getNotes = (...a) => notesQ.getNotes(db, ...a);
 export const getNoteWithBodies = (...a) => notesQ.getNoteWithBodies(db, ...a);

@@ -28,6 +28,9 @@
 					</li>
 					<li>
 						<a href="/notes" class:active={page.url.pathname === '/notes'}>Notes</a>
+					</li>
+					<li>
+						<a href="/calendar" class:active={page.url.pathname === '/calendar'}>Calendar</a>
 				</li>
 			</ul>
 		</div>
@@ -45,6 +48,11 @@
 					<li>
 						<a href="/manage-family" class:active={page.url.pathname === '/manage-family'}>
 							Manage Family
+						</a>
+					</li>
+					<li>
+						<a href="/manage-locations" class:active={page.url.pathname === '/manage-locations'}>
+							Manage Locations
 						</a>
 					</li>
 				</ul>

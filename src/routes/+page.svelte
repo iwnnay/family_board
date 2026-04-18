@@ -2,6 +2,7 @@
 	import { applyAction, deserialize, enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { getHue, COLORS } from '$lib/colors.js';
+	import CalendarStrip from '$lib/CalendarStrip.svelte';
 
 	let { data } = $props();
 
@@ -19,6 +20,14 @@
 	let formBodies = $state([emptyBody()]);
 	let colorPickerOpen = $state(false);
 
+	async function openEventChip(ev) {
+		if (ev.rel_type === 'Cal Event') {
+			await openCalendarEntry(ev.rel_id);
+		} else {
+			await openNote(ev);
+		}
+	}
+
 	async function openNote(ev) {
 		const res = await fetch(`/notes?/loadNote`, {
 			method: 'POST',
@@ -30,6 +39,38 @@
 			activeNote = result.data.note;
 			noteModal = 'read';
 		}
+	}
+
+	// ── calendar entry modal ──────────────────────────────────────────────────
+	let activeCalEntry = $state(null);
+
+	async function openCalendarEntry(id) {
+		const res = await fetch(`?/loadCalendarEntry`, {
+			method: 'POST',
+			body: new URLSearchParams({ id: String(id) }),
+			headers: { 'x-sveltekit-action': '1' }
+		});
+		const result = deserialize(await res.text());
+		if (result?.data?.entry) {
+			activeCalEntry = result.data.entry;
+		}
+	}
+
+	function fmtCalTime(str) {
+		return new Date(str).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+	}
+
+	function fmtCalDate(str) {
+		return new Date(str).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+	}
+
+	function calStripDate(str) {
+		const d = new Date(str);
+		return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+	}
+
+	function mapsUrl(address) {
+		return `https://maps.google.com/?q=${encodeURIComponent(address)}`;
 	}
 
 	function openEdit(note) {
@@ -153,7 +194,7 @@
 {#if data.events.length > 0}
 	<div class="events-bar">
 		{#each data.events as ev (ev.id)}
-			<button class="event-chip" onclick={() => openNote(ev)}>
+			<button class="event-chip" onclick={() => openEventChip(ev)}>
 				<span class="event-msg">{ev.message}</span>
 				<span class="event-time">{new Date(ev.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
 			</button>
@@ -231,6 +272,8 @@
 		</div>
 	{/if}
 {/if}
+
+<CalendarStrip entries={data.calendarEntries} onChipClick={(entry) => openCalendarEntry(entry.id)} label="Upcoming Events" />
 
 {#if showMemberModal}
 	<div
@@ -356,6 +399,32 @@
 						<span class="swatch-label">{c.label}</span>
 					</button>
 				{/each}
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- ── calendar entry modal ──────────────────────────────────────────────── -->
+{#if activeCalEntry}
+	<div class="modal-overlay" role="button" tabindex="-1" onclick={() => (activeCalEntry = null)} onkeydown={() => {}}>
+		<div class="cal-entry-modal" role="dialog" onclick={(e) => e.stopPropagation()} onkeydown={() => {}}>
+			<div class="cal-entry-toolbar">
+				<span class="cal-entry-title">{activeCalEntry.title}</span>
+				<div class="cal-entry-actions">
+					<a href="/calendar" class="btn-ghost">Open Calendar</a>
+					<button class="btn-ghost" onclick={() => (activeCalEntry = null)}>✕</button>
+				</div>
+			</div>
+			<div class="cal-entry-body">
+				<p class="cal-entry-time">{fmtCalDate(activeCalEntry.start_time)}, {fmtCalTime(activeCalEntry.start_time)} – {fmtCalTime(activeCalEntry.end_time)}</p>
+				{#if activeCalEntry.location_name}
+					<a class="cal-entry-loc" href={mapsUrl(activeCalEntry.location_address ?? activeCalEntry.location_name)} target="_blank" rel="noopener noreferrer">
+						📍 {activeCalEntry.location_name}
+					</a>
+				{/if}
+				{#if activeCalEntry.description}
+					<p class="cal-entry-desc">{activeCalEntry.description}</p>
+				{/if}
 			</div>
 		</div>
 	</div>
@@ -849,5 +918,77 @@
 		font-size: 0.65rem;
 		color: #374151;
 		font-weight: 500;
+	}
+
+
+	/* ── calendar entry modal ── */
+	.cal-entry-modal {
+		background: #fff;
+		border-radius: 12px;
+		width: min(520px, 95vw);
+		max-height: 80vh;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+	}
+
+	.cal-entry-toolbar {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.65rem 0.85rem;
+		background: #f9fafb;
+		border-bottom: 1px solid #e5e7eb;
+		flex-shrink: 0;
+	}
+
+	.cal-entry-title {
+		font-weight: 700;
+		font-size: 1rem;
+		color: #1f2937;
+		flex: 1;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.cal-entry-actions {
+		display: flex;
+		gap: 0.25rem;
+		flex-shrink: 0;
+		align-items: center;
+	}
+
+	.cal-entry-body {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+		padding: 1rem 1.1rem;
+		overflow-y: auto;
+		flex: 1;
+	}
+
+	.cal-entry-time {
+		font-size: 0.88rem;
+		color: #374151;
+		font-weight: 500;
+	}
+
+	.cal-entry-loc {
+		font-size: 0.85rem;
+		color: #2563eb;
+		text-decoration: none;
+	}
+
+	.cal-entry-loc:hover {
+		text-decoration: underline;
+	}
+
+	.cal-entry-desc {
+		font-size: 0.9rem;
+		color: #4b5563;
+		white-space: pre-wrap;
+		line-height: 1.6;
 	}
 </style>

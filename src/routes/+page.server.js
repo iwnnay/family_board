@@ -1,12 +1,28 @@
-import { getChoresWithStatus, completeChore, getRecentEvents } from '$lib/server/db';
+import { getChoresWithStatus, completeChore, getRecentEvents, getCalendarEntries, getCalendarEntryById } from '$lib/server/db';
 import { fail } from '@sveltejs/kit';
 
 export async function load() {
-	const [chores, events] = await Promise.all([getChoresWithStatus(), getRecentEvents()]);
-	return { chores, events };
+	const now = new Date();
+	const threeMonthsOut = new Date(now);
+	threeMonthsOut.setMonth(threeMonthsOut.getMonth() + 3);
+	const todayStr = now.toISOString().replace('T', ' ').substring(0, 10) + ' 00:00:00';
+	const stripTo = threeMonthsOut.toISOString().replace('T', ' ').substring(0, 19);
+
+	const [chores, events, calendarEntries] = await Promise.all([getChoresWithStatus(), getRecentEvents(), getCalendarEntries({ from: todayStr, to: stripTo })]);
+	return { chores, events, calendarEntries };
 }
 
 export const actions = {
+	loadCalendarEntry: async ({ request }) => {
+		const data = await request.formData();
+		const id = data.get('id');
+		if (!id) {
+			return fail(400, { error: 'Missing id' });
+		}
+		const entry = await getCalendarEntryById(Number(id));
+		return { entry };
+	},
+
 	complete: async ({ request, cookies }) => {
 		const data = await request.formData();
 		const chore_id = Number(data.get('chore_id'));

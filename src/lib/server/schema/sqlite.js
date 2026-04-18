@@ -64,3 +64,20 @@ export const recent_events = sqliteTable('recent_events', {
 	action: text('action').notNull(),
 	created_at: text('created_at').notNull()
 });
+
+export const locations = sqliteTable('locations', {
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	name: text('name').notNull(),
+	address: text('address'),
+	is_deleted: integer('is_deleted').notNull().default(0)
+});
+
+export const calendar_entries = sqliteTable('calendar_entries', {
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	title: text('title').notNull(),
+	location_id: integer('location_id').references(() => locations.id, { onDelete: 'set null' }),
+	start_time: text('start_time').notNull(),
+	end_time: text('end_time').notNull(),
+	description: text('description'),
+	created_by: integer('created_by').references(() => family.id, { onDelete: 'set null' })
+});
