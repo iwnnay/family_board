@@ -12,6 +12,7 @@ import * as choresQ from './queries/chores.js';
 import * as completionsQ from './queries/completions.js';
 import * as notesQ from './queries/notes.js';
 import * as calendarQ from './queries/calendar.js';
+import * as listsQ from './queries/lists.js';
 
 // ---------------------------------------------------------------------------
 // Raw SQL used only for dev SQLite setup (avoids needing drizzle-kit push)
@@ -83,6 +84,19 @@ const SQLITE_SETUP_SQL = `
     description TEXT,
     created_by  INTEGER REFERENCES family(id) ON DELETE SET NULL
   );
+  CREATE TABLE IF NOT EXISTS lists (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    title      TEXT NOT NULL,
+    created_by INTEGER REFERENCES family(id) ON DELETE SET NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS list_items (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    list_id      INTEGER NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
+    item         TEXT NOT NULL,
+    completed_at TEXT
+  );
 `;
 
 /**
@@ -153,3 +167,10 @@ export const updateNote = (...a) => notesQ.updateNote(db, ...a);
 export const deleteNote = (...a) => notesQ.deleteNote(db, ...a);
 export const togglePin = (...a) => notesQ.togglePin(db, ...a);
 export const getRecentEvents = (...a) => notesQ.getRecentEvents(db, ...a);
+
+export const getLists = (...a) => listsQ.getLists(db, ...a);
+export const createList = (...a) => listsQ.createList(db, ...a);
+export const deleteList = (...a) => listsQ.deleteList(db, ...a);
+export const addListItem = (...a) => listsQ.addListItem(db, ...a);
+export const checkListItem = (...a) => listsQ.checkListItem(db, ...a);
+export const restoreListItem = (...a) => listsQ.restoreListItem(db, ...a);

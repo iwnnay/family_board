@@ -31,6 +31,9 @@
 					</li>
 					<li>
 						<a href="/calendar" class:active={page.url.pathname === '/calendar'}>Calendar</a>
+					</li>
+					<li>
+						<a href="/lists" class:active={page.url.pathname === '/lists'}>Lists</a>
 				</li>
 			</ul>
 		</div>

@@ -83,3 +83,20 @@ export const calendar_entries = mysqlTable('calendar_entries', {
 	description: varchar('description', { length: 2000 }),
 	created_by: int('created_by').references(() => family.id, { onDelete: 'set null' })
 });
+
+export const lists = mysqlTable('lists', {
+	id: int('id').primaryKey().autoincrement(),
+	title: varchar('title', { length: 255 }).notNull(),
+	created_by: int('created_by').references(() => family.id, { onDelete: 'set null' }),
+	created_at: varchar('created_at', { length: 30 }).notNull(),
+	updated_at: varchar('updated_at', { length: 30 }).notNull()
+});
+
+export const list_items = mysqlTable('list_items', {
+	id: int('id').primaryKey().autoincrement(),
+	list_id: int('list_id')
+		.notNull()
+		.references(() => lists.id, { onDelete: 'cascade' }),
+	item: varchar('item', { length: 500 }).notNull(),
+	completed_at: varchar('completed_at', { length: 30 })
+});

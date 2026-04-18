@@ -81,3 +81,20 @@ export const calendar_entries = sqliteTable('calendar_entries', {
 	description: text('description'),
 	created_by: integer('created_by').references(() => family.id, { onDelete: 'set null' })
 });
+
+export const lists = sqliteTable('lists', {
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	title: text('title').notNull(),
+	created_by: integer('created_by').references(() => family.id, { onDelete: 'set null' }),
+	created_at: text('created_at').notNull(),
+	updated_at: text('updated_at').notNull()
+});
+
+export const list_items = sqliteTable('list_items', {
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	list_id: integer('list_id')
+		.notNull()
+		.references(() => lists.id, { onDelete: 'cascade' }),
+	item: text('item').notNull(),
+	completed_at: text('completed_at')
+});
