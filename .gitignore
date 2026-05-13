@@ -26,3 +26,5 @@ vite.config.ts.timestamp-*
 
 # App specific
 static/store
+data/family_board.db-wal
+data/family_board.db-shm
