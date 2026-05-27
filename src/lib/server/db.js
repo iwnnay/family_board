@@ -121,7 +121,7 @@ if (isMysql) {
 	const pool = mysql.createPool(process.env.DATABASE_URL);
 	db = mysqlDrizzle({ client: pool, schema: mysqlSchema, mode: 'default' });
 } else {
-	const dbDir = join(process.cwd(), 'data');
+	const dbDir = join(process.cwd(), 'storage');
 	if (!existsSync(dbDir)) {
 		mkdirSync(dbDir, { recursive: true });
 	}

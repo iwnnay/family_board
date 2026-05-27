@@ -44,13 +44,7 @@
 </div>
 
 <div class="search-bar">
-	<input
-		class="input search-input"
-		type="search"
-		placeholder="Search locations…"
-		bind:value={search}
-		autocomplete="off"
-	/>
+	<input class="input search-input" type="search" placeholder="Search locations…" bind:value={search} autocomplete="off" />
 	{#if !search.trim() && data.locations.length > LIMIT}
 		<span class="search-hint">Showing {LIMIT} of {data.locations.length} · search to find others</span>
 	{/if}
@@ -312,5 +306,24 @@
 
 	.btn-danger:hover {
 		color: #dc2626;
+	}
+
+	@media (max-width: 640px) {
+		.page-header {
+			flex-wrap: wrap;
+			gap: 0.5rem;
+		}
+
+		h1 {
+			font-size: 1.25rem;
+		}
+
+		.search-bar {
+			flex-wrap: wrap;
+		}
+
+		.search-input {
+			max-width: 100%;
+		}
 	}
 </style>

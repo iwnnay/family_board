@@ -251,7 +251,14 @@
 			<div class="color-modal-head">
 				<span class="modal-heading">Pick a color</span>
 				{#if formColor}
-					<button type="button" class="btn-ghost" onclick={() => { formColor = ''; colorPickerOpen = false; }}>✕ Clear</button>
+					<button
+						type="button"
+						class="btn-ghost"
+						onclick={() => {
+							formColor = '';
+							colorPickerOpen = false;
+						}}>✕ Clear</button
+					>
 				{/if}
 			</div>
 			<div class="color-picker-grid">
@@ -262,7 +269,10 @@
 						class:swatch-selected={formColor === c.key}
 						style={swatchStyle(c.key)}
 						title={c.label}
-						onclick={() => { formColor = c.key; colorPickerOpen = false; }}
+						onclick={() => {
+							formColor = c.key;
+							colorPickerOpen = false;
+						}}
 					>
 						<span class="swatch-label">{c.label}</span>
 					</button>
@@ -505,7 +515,9 @@
 		border: 2px solid;
 		cursor: pointer;
 		padding: 0;
-		transition: transform 0.1s, box-shadow 0.1s;
+		transition:
+			transform 0.1s,
+			box-shadow 0.1s;
 	}
 
 	.color-dot:hover {
@@ -588,7 +600,9 @@
 		border-radius: 8px;
 		border: 2px solid transparent;
 		cursor: pointer;
-		transition: transform 0.1s, box-shadow 0.1s;
+		transition:
+			transform 0.1s,
+			box-shadow 0.1s;
 	}
 
 	.swatch-lg:hover {
@@ -725,5 +739,15 @@
 		color: #4b5563;
 		white-space: pre-wrap;
 		line-height: 1.6;
+	}
+
+	@media (max-width: 640px) {
+		.page-title {
+			font-size: 1.25rem;
+		}
+
+		.notes-grid {
+			grid-template-columns: 1fr;
+		}
 	}
 </style>

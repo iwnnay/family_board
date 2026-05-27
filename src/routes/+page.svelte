@@ -133,15 +133,19 @@
 
 	// Pastel bubble colors for each frequency badge
 	const FREQ_BADGE = {
-		none:    { bg: '#dbeafe', text: '#1d4ed8' },
-		daily:   { bg: '#dcfce7', text: '#15803d' },
-		weekly:  { bg: '#ffedd5', text: '#c2410c' },
+		none: { bg: '#dbeafe', text: '#1d4ed8' },
+		daily: { bg: '#dcfce7', text: '#15803d' },
+		weekly: { bg: '#ffedd5', text: '#c2410c' },
 		monthly: { bg: '#f3e8ff', text: '#7e22ce' },
-		yearly:  { bg: '#fee2e2', text: '#b91c1c' },
+		yearly: { bg: '#fee2e2', text: '#b91c1c' }
 	};
 
 	async function submitAction(action, formData) {
-		const response = await fetch(action, { method: 'POST', body: formData });
+		const response = await fetch(action, {
+			method: 'POST',
+			body: formData,
+			headers: { 'x-sveltekit-action': '1' }
+		});
 		const result = deserialize(await response.text());
 		if (result.type === 'success' || result.type === 'redirect') {
 			await invalidateAll();
@@ -180,11 +184,7 @@
 
 	function completedStyle(chore) {
 		const hue = getHue(chore.completed_by_color);
-		return [
-			`background: hsl(${hue} 60% 95%)`,
-			`border-color: hsl(${hue} 45% 85%)`,
-			`--done-text: hsl(${hue} 55% 38%)`,
-		].join('; ');
+		return [`background: hsl(${hue} 60% 95%)`, `border-color: hsl(${hue} 45% 85%)`, `--done-text: hsl(${hue} 55% 38%)`].join('; ');
 	}
 
 	let dueChores = $derived(data.chores.filter((c) => c.status === 'due'));
@@ -204,13 +204,7 @@
 
 <div class="page-header">
 	<h1>Chores</h1>
-	<select
-		id="who-dis"
-		class:unselected={!data.currentMember}
-		class:selected={data.currentMember}
-		onchange={handleMemberChange}
-		aria-label="Who dis?"
-	>
+	<select id="who-dis" class:unselected={!data.currentMember} class:selected={data.currentMember} onchange={handleMemberChange} aria-label="Who dis?">
 		<option value="">Who dis?</option>
 		{#each data.family as member}
 			<option value={member.id} selected={data.currentMember?.id === member.id}>
@@ -237,10 +231,7 @@
 						<img src="/store/images/chores/{chore.image}" alt={chore.name} class="chore-img" />
 					{/if}
 					<span class="chore-name">{chore.name}</span>
-					<span
-						class="freq-bubble"
-						style="background: {FREQ_BADGE[chore.frequency].bg}; color: {FREQ_BADGE[chore.frequency].text}"
-					>
+					<span class="freq-bubble" style="background: {FREQ_BADGE[chore.frequency].bg}; color: {FREQ_BADGE[chore.frequency].text}">
 						{FREQ_LABELS[chore.frequency]}
 					</span>
 					{#if chore.suggested_day}
@@ -260,10 +251,7 @@
 						<img src="/store/images/chores/{chore.image}" alt={chore.name} class="chore-img" />
 					{/if}
 					<span class="chore-name">{chore.name}</span>
-					<span
-						class="freq-bubble"
-						style="background: {FREQ_BADGE[chore.frequency].bg}; color: {FREQ_BADGE[chore.frequency].text}; opacity: 0.6"
-					>
+					<span class="freq-bubble" style="background: {FREQ_BADGE[chore.frequency].bg}; color: {FREQ_BADGE[chore.frequency].text}; opacity: 0.6">
 						{FREQ_LABELS[chore.frequency]}
 					</span>
 					<span class="chore-done">✓ {chore.completed_by_name}</span>
@@ -280,7 +268,10 @@
 		class="modal-overlay"
 		role="dialog"
 		aria-modal="true"
-		onclick={() => { showMemberModal = false; pendingChoreId = null; }}
+		onclick={() => {
+			showMemberModal = false;
+			pendingChoreId = null;
+		}}
 	>
 		<div class="modal" onclick={(e) => e.stopPropagation()} role="presentation">
 			<h2>Who are you?</h2>
@@ -383,7 +374,14 @@
 			<div class="color-modal-head">
 				<span class="note-modal-title">Pick a color</span>
 				{#if formColor}
-					<button type="button" class="btn-ghost" onclick={() => { formColor = ''; colorPickerOpen = false; }}>✕ Clear</button>
+					<button
+						type="button"
+						class="btn-ghost"
+						onclick={() => {
+							formColor = '';
+							colorPickerOpen = false;
+						}}>✕ Clear</button
+					>
 				{/if}
 			</div>
 			<div class="color-picker-grid">
@@ -394,7 +392,10 @@
 						class:swatch-selected={formColor === c.key}
 						style={swatchStyle(c.key)}
 						title={c.label}
-						onclick={() => { formColor = c.key; colorPickerOpen = false; }}
+						onclick={() => {
+							formColor = c.key;
+							colorPickerOpen = false;
+						}}
 					>
 						<span class="swatch-label">{c.label}</span>
 					</button>
@@ -451,7 +452,10 @@
 		font-weight: 600;
 		cursor: pointer;
 		border: 2px solid;
-		transition: background 0.15s, color 0.15s, border-color 0.15s;
+		transition:
+			background 0.15s,
+			color 0.15s,
+			border-color 0.15s;
 	}
 
 	#who-dis.unselected {
@@ -497,7 +501,9 @@
 		background: #f8fafc;
 		border-color: #e2e8f0;
 		cursor: pointer;
-		transition: transform 0.1s, box-shadow 0.1s;
+		transition:
+			transform 0.1s,
+			box-shadow 0.1s;
 	}
 
 	.chore-tile.due:hover {
@@ -651,7 +657,9 @@
 		font-weight: 500;
 		cursor: pointer;
 		text-align: left;
-		transition: border-color 0.15s, background 0.15s;
+		transition:
+			border-color 0.15s,
+			background 0.15s;
 	}
 
 	.member-btn:hover {
@@ -802,7 +810,9 @@
 		border: 2px solid;
 		cursor: pointer;
 		padding: 0;
-		transition: transform 0.1s, box-shadow 0.1s;
+		transition:
+			transform 0.1s,
+			box-shadow 0.1s;
 	}
 
 	.color-dot:hover {
@@ -901,7 +911,9 @@
 		border-radius: 8px;
 		border: 2px solid transparent;
 		cursor: pointer;
-		transition: transform 0.1s, box-shadow 0.1s;
+		transition:
+			transform 0.1s,
+			box-shadow 0.1s;
 	}
 
 	.swatch-lg:hover {
@@ -919,7 +931,6 @@
 		color: #374151;
 		font-weight: 500;
 	}
-
 
 	/* ── calendar entry modal ── */
 	.cal-entry-modal {
@@ -990,5 +1001,32 @@
 		color: #4b5563;
 		white-space: pre-wrap;
 		line-height: 1.6;
+	}
+
+	/* ── mobile ── */
+	@media (max-width: 640px) {
+		h1 {
+			font-size: 1.35rem;
+		}
+
+		.page-header {
+			flex-wrap: wrap;
+			gap: 0.5rem;
+		}
+
+		.chore-grid {
+			grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+			gap: 0.5rem;
+		}
+
+		.modal {
+			max-width: 95vw;
+		}
+
+		.note-modal,
+		.cal-entry-modal {
+			width: 95vw;
+			max-height: 90vh;
+		}
 	}
 </style>

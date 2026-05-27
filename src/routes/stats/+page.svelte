@@ -99,4 +99,18 @@
 		color: #cbd5e1;
 		font-style: italic;
 	}
+
+	@media (max-width: 640px) {
+		h1 {
+			font-size: 1.35rem;
+		}
+
+		.stats-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.stat-card {
+			padding: 1rem;
+		}
+	}
 </style>

@@ -27,13 +27,7 @@
 			<div class="swatches">
 				{#each COLORS as color}
 					<label class="swatch-wrap" title={color.label}>
-						<input
-							type="radio"
-							name="color"
-							value={color.key}
-							checked={newColor === color.key}
-							onchange={() => (newColor = color.key)}
-						/>
+						<input type="radio" name="color" value={color.key} checked={newColor === color.key} onchange={() => (newColor = color.key)} />
 						<span class="swatch" style="background: {swatchBg(color.hue)}">
 							{#if newColor === color.key}<span class="check">✓</span>{/if}
 						</span>
@@ -174,7 +168,9 @@
 		height: 26px;
 		border-radius: 50%;
 		border: 2px solid transparent;
-		transition: transform 0.1s, border-color 0.1s;
+		transition:
+			transform 0.1s,
+			border-color 0.1s;
 		cursor: pointer;
 		font-size: 0;
 		padding: 0;
@@ -269,5 +265,15 @@
 	.empty {
 		color: #94a3b8;
 		font-style: italic;
+	}
+
+	@media (max-width: 640px) {
+		h1 {
+			font-size: 1.35rem;
+		}
+
+		.form-card {
+			padding: 1rem;
+		}
 	}
 </style>

@@ -49,9 +49,7 @@
 	}
 
 	let fileInput = $state(null);
-	let formValues = $derived(
-		editing ?? { id: '', name: '', frequency: 'none', suggested_day: '', image: null }
-	);
+	let formValues = $derived(editing ?? { id: '', name: '', frequency: 'none', suggested_day: '', image: null });
 </script>
 
 <h1>Manage Chores</h1>
@@ -97,13 +95,7 @@
 
 		<div class="field">
 			<label for="suggested_day">Suggested Day <span class="optional">(optional)</span></label>
-			<input
-				id="suggested_day"
-				name="suggested_day"
-				type="text"
-				value={formValues.suggested_day ?? ''}
-				placeholder="e.g. Monday, weekends..."
-			/>
+			<input id="suggested_day" name="suggested_day" type="text" value={formValues.suggested_day ?? ''} placeholder="e.g. Monday, weekends..." />
 		</div>
 
 		<div class="field">
@@ -112,9 +104,15 @@
 			<div
 				class="dropzone"
 				class:drag-over={dragOver}
-				ondragover={(e) => { e.preventDefault(); dragOver = true; }}
+				ondragover={(e) => {
+					e.preventDefault();
+					dragOver = true;
+				}}
 				ondragleave={() => (dragOver = false)}
-				ondrop={(e) => { e.preventDefault(); handleDrop(e); }}
+				ondrop={(e) => {
+					e.preventDefault();
+					handleDrop(e);
+				}}
 				onclick={() => fileInput?.click()}
 				onkeydown={(e) => e.key === 'Enter' && fileInput?.click()}
 				role="button"
@@ -126,8 +124,11 @@
 					<button
 						type="button"
 						class="clear-btn"
-						onclick={(e) => { e.stopPropagation(); clearImage(); }}
-					>✕ Remove</button>
+						onclick={(e) => {
+							e.stopPropagation();
+							clearImage();
+						}}>✕ Remove</button
+					>
 				{:else}
 					<div class="dropzone-prompt">
 						<span class="drop-icon">🖼️</span>
@@ -135,14 +136,7 @@
 					</div>
 				{/if}
 			</div>
-			<input
-				bind:this={fileInput}
-				type="file"
-				name="image"
-				accept="image/*"
-				class="hidden-input"
-				onchange={handleFileChange}
-			/>
+			<input bind:this={fileInput} type="file" name="image" accept="image/*" class="hidden-input" onchange={handleFileChange} />
 		</div>
 
 		<div class="actions">
@@ -166,11 +160,7 @@
 			<div class="chore-row">
 				<div class="chore-info">
 					{#if chore.image}
-						<img
-							src="/store/images/chores/{chore.image}"
-							alt={chore.name}
-							class="chore-thumb"
-						/>
+						<img src="/store/images/chores/{chore.image}" alt={chore.name} class="chore-thumb" />
 					{/if}
 					<span class="chore-name">{chore.name}</span>
 					<span class="chore-freq freq-{chore.frequency}">{chore.frequency}</span>
@@ -270,7 +260,9 @@
 		align-items: center;
 		justify-content: center;
 		cursor: pointer;
-		transition: border-color 0.15s, background 0.15s;
+		transition:
+			border-color 0.15s,
+			background 0.15s;
 		position: relative;
 		overflow: hidden;
 		gap: 0.5rem;
@@ -408,11 +400,26 @@
 		border-radius: 99px;
 	}
 
-	.freq-none { background: #dbeafe; color: #1d4ed8; }
-	.freq-daily { background: #dcfce7; color: #15803d; }
-	.freq-weekly { background: #ffedd5; color: #c2410c; }
-	.freq-monthly { background: #f3e8ff; color: #7e22ce; }
-	.freq-yearly { background: #fee2e2; color: #b91c1c; }
+	.freq-none {
+		background: #dbeafe;
+		color: #1d4ed8;
+	}
+	.freq-daily {
+		background: #dcfce7;
+		color: #15803d;
+	}
+	.freq-weekly {
+		background: #ffedd5;
+		color: #c2410c;
+	}
+	.freq-monthly {
+		background: #f3e8ff;
+		color: #7e22ce;
+	}
+	.freq-yearly {
+		background: #fee2e2;
+		color: #b91c1c;
+	}
 
 	.chore-day {
 		font-size: 0.8rem;
@@ -435,7 +442,9 @@
 		color: #475569;
 	}
 
-	.btn-edit:hover { background: #e2e8f0; }
+	.btn-edit:hover {
+		background: #e2e8f0;
+	}
 
 	.btn-delete {
 		padding: 0.3rem 0.75rem;
@@ -447,10 +456,30 @@
 		color: #dc2626;
 	}
 
-	.btn-delete:hover { background: #fee2e2; }
+	.btn-delete:hover {
+		background: #fee2e2;
+	}
 
 	.empty {
 		color: #94a3b8;
 		font-style: italic;
+	}
+
+	@media (max-width: 640px) {
+		h1 {
+			font-size: 1.35rem;
+		}
+
+		.form-card {
+			padding: 1rem;
+		}
+
+		.chore-row {
+			flex-wrap: wrap;
+		}
+
+		.chore-actions {
+			width: 100%;
+		}
 	}
 </style>

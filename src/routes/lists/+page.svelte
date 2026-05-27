@@ -58,8 +58,8 @@
 								if (!confirm('Delete this list and all its items?')) {
 									e.preventDefault();
 								}
-							}}
-						>✕</button>
+							}}>✕</button
+						>
 					</form>
 				{/if}
 			</div>
@@ -79,11 +79,7 @@
 					>
 						<input type="hidden" name="item_id" value={item.id} />
 						<label class="item-row">
-							<input
-								type="checkbox"
-								class="item-checkbox"
-								onchange={(e) => e.currentTarget.form.submit()}
-							/>
+							<input type="checkbox" class="item-checkbox" onchange={(e) => e.currentTarget.form.submit()} />
 							<span class="item-text">{item.item}</span>
 						</label>
 					</form>
@@ -103,25 +99,16 @@
 				>
 					<input type="hidden" name="list_id" value={list.id} />
 					<div class="add-item-row">
-						<input
-							class="input input-sm"
-							type="text"
-							name="item"
-							placeholder="Add item..."
-							bind:value={addItemText[list.id]}
-						/>
-						<button
-							type="submit"
-							class="btn-ghost add-item-btn"
-							disabled={!addItemText[list.id]?.trim()}
-						>+</button>
+						<input class="input input-sm" type="text" name="item" placeholder="Add item..." bind:value={addItemText[list.id]} />
+						<button type="submit" class="btn-ghost add-item-btn" disabled={!addItemText[list.id]?.trim()}>+</button>
 					</div>
 				</form>
 
 				<!-- Completed items -->
 				{#if list.completed_items.length > 0}
 					<button class="btn-ghost completed-toggle" onclick={() => toggleCompleted(list.id)}>
-						{showCompleted[list.id] ? '▲' : '▼'} {list.completed_items.length} completed
+						{showCompleted[list.id] ? '▲' : '▼'}
+						{list.completed_items.length} completed
 					</button>
 					{#if showCompleted[list.id]}
 						<div class="completed-list">
@@ -360,5 +347,24 @@
 		flex-shrink: 0;
 		font-size: 0.9rem;
 		padding: 0.15rem 0.4rem;
+	}
+
+	@media (max-width: 640px) {
+		.page-title {
+			font-size: 1.25rem;
+		}
+
+		.lists-container {
+			flex-direction: column;
+			flex-wrap: wrap;
+		}
+
+		.list-card {
+			width: 100%;
+		}
+
+		.create-bar {
+			max-width: 100%;
+		}
 	}
 </style>

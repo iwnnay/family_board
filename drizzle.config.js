@@ -15,6 +15,6 @@ export default defineConfig(
 				dialect: 'sqlite',
 				schema: './src/lib/server/schema/sqlite.js',
 				out: './drizzle/sqlite',
-				dbCredentials: { url: './data/family_board.db' }
+				dbCredentials: { url: './storage/family_board.db' }
 			}
 );

@@ -35,7 +35,7 @@ export const actions = {
 		}
 
 		if (member_id_from_form) {
-			cookies.set('member_id', String(member_id_from_form), { path: '/', maxAge: 60 * 60 * 24 * 365 });
+			cookies.set('member_id', String(member_id_from_form), { path: '/', maxAge: 60 * 60 * 24 * 365, secure: false });
 			member_id = Number(member_id_from_form);
 		}
 
@@ -48,9 +48,9 @@ export const actions = {
 		const member_id = data.get('member_id');
 
 		if (member_id) {
-			cookies.set('member_id', String(member_id), { path: '/', maxAge: 60 * 60 * 24 * 365 });
+			cookies.set('member_id', String(member_id), { path: '/', maxAge: 60 * 60 * 24 * 365, secure: false });
 		} else {
-			cookies.delete('member_id', { path: '/' });
+			cookies.delete('member_id', { path: '/', secure: false });
 		}
 
 		return { success: true };

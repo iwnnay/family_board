@@ -37,14 +37,22 @@
 	}
 
 	function prevMonth() {
-		let y = data.year, m = data.month - 1;
-		if (m < 1) { m = 12; y--; }
+		let y = data.year,
+			m = data.month - 1;
+		if (m < 1) {
+			m = 12;
+			y--;
+		}
 		goto(`/calendar?year=${y}&month=${m}`);
 	}
 
 	function nextMonth() {
-		let y = data.year, m = data.month + 1;
-		if (m > 12) { m = 1; y++; }
+		let y = data.year,
+			m = data.month + 1;
+		if (m > 12) {
+			m = 1;
+			y++;
+		}
 		goto(`/calendar?year=${y}&month=${m}`);
 	}
 
@@ -104,12 +112,23 @@
 	let formDuration = $state(60);
 
 	const DURATION_OPTIONS = [
-		{ label: '15 min', value: 15 }, { label: '30 min', value: 30 }, { label: '45 min', value: 45 },
-		{ label: '1 hr', value: 60 }, { label: '1 hr 15 min', value: 75 }, { label: '1 hr 30 min', value: 90 },
-		{ label: '1 hr 45 min', value: 105 }, { label: '2 hr', value: 120 }, { label: '2 hr 30 min', value: 150 },
-		{ label: '3 hr', value: 180 }, { label: '3 hr 30 min', value: 210 }, { label: '4 hr', value: 240 },
-		{ label: '5 hr', value: 300 }, { label: '6 hr', value: 360 }, { label: '8 hr', value: 480 },
-		{ label: '10 hr', value: 600 }, { label: '12 hr', value: 720 }
+		{ label: '15 min', value: 15 },
+		{ label: '30 min', value: 30 },
+		{ label: '45 min', value: 45 },
+		{ label: '1 hr', value: 60 },
+		{ label: '1 hr 15 min', value: 75 },
+		{ label: '1 hr 30 min', value: 90 },
+		{ label: '1 hr 45 min', value: 105 },
+		{ label: '2 hr', value: 120 },
+		{ label: '2 hr 30 min', value: 150 },
+		{ label: '3 hr', value: 180 },
+		{ label: '3 hr 30 min', value: 210 },
+		{ label: '4 hr', value: 240 },
+		{ label: '5 hr', value: 300 },
+		{ label: '6 hr', value: 360 },
+		{ label: '8 hr', value: 480 },
+		{ label: '10 hr', value: 600 },
+		{ label: '12 hr', value: 720 }
 	];
 
 	// ── display helpers ───────────────────────────────────────────────────────
@@ -152,7 +171,15 @@
 		<div class="cal-day-name">{d}</div>
 	{/each}
 	{#each calDays as day}
-		<div class="cal-cell" class:today={isToday(day)} class:empty-cell={!day} onclick={() => day && openDay(day)} role={day ? 'button' : undefined} tabindex={day ? 0 : undefined} onkeydown={(e) => e.key === 'Enter' && day && openDay(day)}>
+		<div
+			class="cal-cell"
+			class:today={isToday(day)}
+			class:empty-cell={!day}
+			onclick={() => day && openDay(day)}
+			role={day ? 'button' : undefined}
+			tabindex={day ? 0 : undefined}
+			onkeydown={(e) => e.key === 'Enter' && day && openDay(day)}
+		>
 			{#if day}
 				<span class="cal-day-num">{day}</span>
 				{#each entriesForDay(day) as entry}
@@ -172,7 +199,13 @@
 			<div class="modal-toolbar">
 				<span class="modal-heading">{MONTH_NAMES[data.month - 1]} {dayModal.day}, {data.year}</span>
 				<div class="modal-actions">
-					<button class="btn-ghost" onclick={() => { openCreate(dayModal.day); dayModal = null; }}>+ New</button>
+					<button
+						class="btn-ghost"
+						onclick={() => {
+							openCreate(dayModal.day);
+							dayModal = null;
+						}}>+ New</button
+					>
 					<button class="btn-ghost" onclick={() => (dayModal = null)}>✕</button>
 				</div>
 			</div>
@@ -181,7 +214,13 @@
 			{:else}
 				<div class="day-entry-list">
 					{#each dayModal.entries as entry (entry.id)}
-						<button class="day-entry-row" onclick={() => { openEntry(entry); dayModal = null; }}>
+						<button
+							class="day-entry-row"
+							onclick={() => {
+								openEntry(entry);
+								dayModal = null;
+							}}
+						>
 							<span class="day-entry-time">{fmtTime(entry.start_time)} – {fmtTime(entry.end_time)}</span>
 							<span class="day-entry-title">{entry.title}</span>
 							{#if entry.location_name}
@@ -197,17 +236,40 @@
 
 <!-- ── entry show modal ── -->
 {#if entryModal === 'show' && activeEntry}
-	<div class="modal-backdrop" role="button" tabindex="-1" onclick={() => { entryModal = null; activeEntry = null; }} onkeydown={() => {}}>
+	<div
+		class="modal-backdrop"
+		role="button"
+		tabindex="-1"
+		onclick={() => {
+			entryModal = null;
+			activeEntry = null;
+		}}
+		onkeydown={() => {}}
+	>
 		<div class="modal" role="dialog" onclick={(e) => e.stopPropagation()} onkeydown={() => {}}>
 			<div class="modal-toolbar">
 				<span class="modal-heading">{activeEntry.title}</span>
 				<div class="modal-actions">
 					<button class="btn-ghost" onclick={() => openEdit(activeEntry)}>✏️ Edit</button>
-					<form method="POST" action="?/duplicate" use:enhance={() => async ({ update }) => { await update(); await invalidateAll(); }}>
+					<form
+						method="POST"
+						action="?/duplicate"
+						use:enhance={() =>
+							async ({ update }) => {
+								await update();
+								await invalidateAll();
+							}}
+					>
 						<input type="hidden" name="id" value={activeEntry.id} />
 						<button type="submit" class="btn-ghost">⧉ Duplicate</button>
 					</form>
-					<button class="btn-ghost" onclick={() => { entryModal = null; activeEntry = null; }}>✕</button>
+					<button
+						class="btn-ghost"
+						onclick={() => {
+							entryModal = null;
+							activeEntry = null;
+						}}>✕</button
+					>
 				</div>
 			</div>
 			<div class="entry-body">
@@ -249,7 +311,9 @@
 							<button
 								type="submit"
 								class="btn-ghost btn-danger"
-								onclick={(e) => { if (!confirm('Delete this event?')) e.preventDefault(); }}
+								onclick={(e) => {
+									if (!confirm('Delete this event?')) e.preventDefault();
+								}}
 							>
 								🗑 Delete
 							</button>
@@ -421,7 +485,6 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
-
 
 	/* ── modals ── */
 	.modal-backdrop {
@@ -656,5 +719,41 @@
 
 	.btn-danger:hover {
 		color: #dc2626;
+	}
+
+	/* ── mobile ── */
+	@media (max-width: 640px) {
+		.cal-header {
+			flex-wrap: wrap;
+			gap: 0.5rem;
+		}
+
+		h1 {
+			font-size: 1.25rem;
+			width: 100%;
+		}
+
+		.cal-cell {
+			min-height: 60px;
+			padding: 0.25rem;
+		}
+
+		.cal-day-num {
+			font-size: 0.72rem;
+		}
+
+		.cal-entry-pill {
+			font-size: 0.6rem;
+			padding: 0.05rem 0.2rem;
+		}
+
+		.cal-month-label {
+			min-width: 120px;
+			font-size: 0.88rem;
+		}
+
+		.field-row {
+			grid-template-columns: 1fr;
+		}
 	}
 </style>
