@@ -1,5 +1,6 @@
 <script>
 	import favicon from '$lib/assets/favicon.svg';
+	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
 	import { afterNavigate } from '$app/navigation';
 	import { getHue, buildCssVars } from '$lib/colors.js';
@@ -10,6 +11,7 @@
 	let drawerOpen = $state(false);
 
 	let cssVars = $derived(buildCssVars(getHue(data.currentMember?.color)));
+	let isAuthed = $derived(!!data.user);
 
 	afterNavigate(() => {
 		drawerOpen = false;
@@ -22,54 +24,67 @@
 </svelte:head>
 
 <div class="app" style={cssVars}>
-	<button class="hamburger" aria-label="Toggle menu" onclick={() => (drawerOpen = !drawerOpen)}>
-		<span></span><span></span><span></span>
-	</button>
+	{#if isAuthed}
+		<button class="hamburger" aria-label="Toggle menu" onclick={() => (drawerOpen = !drawerOpen)}>
+			<span></span><span></span><span></span>
+		</button>
 
-	{#if drawerOpen}
-		<div class="drawer-backdrop" role="presentation" onclick={() => (drawerOpen = false)}></div>
-	{/if}
+		{#if drawerOpen}
+			<div class="drawer-backdrop" role="presentation" onclick={() => (drawerOpen = false)}></div>
+		{/if}
 
-	<nav class="sidebar" class:open={drawerOpen}>
-		<div class="nav-top">
-			<div class="brand">🏠 Family Board</div>
-			<ul>
-				<li>
-					<a href="/" class:active={page.url.pathname === '/'}>Main</a>
-				</li>
-				<li>
-					<a href="/stats" class:active={page.url.pathname === '/stats'}>Stats</a>
-				</li>
-				<li>
-					<a href="/notes" class:active={page.url.pathname === '/notes'}>Notes</a>
-				</li>
-				<li>
-					<a href="/calendar" class:active={page.url.pathname === '/calendar'}>Calendar</a>
-				</li>
-				<li>
-					<a href="/lists" class:active={page.url.pathname === '/lists'}>Lists</a>
-				</li>
-			</ul>
-		</div>
-		<div class="nav-bottom">
-			<button class="settings-toggle" onclick={() => (settingsOpen = !settingsOpen)}>
-				Settings {settingsOpen ? '▲' : '▼'}
-			</button>
-			{#if settingsOpen}
+		<nav class="sidebar" class:open={drawerOpen}>
+			<div class="nav-top">
+				<div class="brand">🏠 Family Board</div>
 				<ul>
 					<li>
-						<a href="/manage-chores" class:active={page.url.pathname === '/manage-chores'}> Manage Chores </a>
+						<a href="/" class:active={page.url.pathname === '/'}>Main</a>
 					</li>
 					<li>
-						<a href="/manage-family" class:active={page.url.pathname === '/manage-family'}> Manage Family </a>
+						<a href="/stats" class:active={page.url.pathname === '/stats'}>Stats</a>
 					</li>
 					<li>
-						<a href="/manage-locations" class:active={page.url.pathname === '/manage-locations'}> Manage Locations </a>
+						<a href="/notes" class:active={page.url.pathname === '/notes'}>Notes</a>
+					</li>
+					<li>
+						<a href="/calendar" class:active={page.url.pathname === '/calendar'}>Calendar</a>
+					</li>
+					<li>
+						<a href="/lists" class:active={page.url.pathname === '/lists'}>Lists</a>
 					</li>
 				</ul>
-			{/if}
-		</div>
-	</nav>
+			</div>
+			<div class="nav-bottom">
+				<button class="settings-toggle" onclick={() => (settingsOpen = !settingsOpen)}>
+					Settings {settingsOpen ? '▲' : '▼'}
+				</button>
+				{#if settingsOpen}
+					<ul>
+						<li>
+							<a href="/settings" class:active={page.url.pathname === '/settings'}> My Settings </a>
+						</li>
+						<li>
+							<a href="/manage-chores" class:active={page.url.pathname === '/manage-chores'}> Manage Chores </a>
+						</li>
+						{#if data.user?.is_admin}
+							<li>
+								<a href="/manage-users" class:active={page.url.pathname === '/manage-users'}> Manage Users </a>
+							</li>
+						{/if}
+						<li>
+							<a href="/manage-locations" class:active={page.url.pathname === '/manage-locations'}> Manage Locations </a>
+						</li>
+					</ul>
+				{/if}
+				<div class="nav-user">
+					<span class="nav-username">{data.currentMember?.name ?? data.user.username}</span>
+					<form method="POST" action="/logout" use:enhance>
+						<button type="submit" class="logout-btn">Log out</button>
+					</form>
+				</div>
+			</div>
+		</nav>
+	{/if}
 
 	<main>
 		{@render children()}
@@ -189,6 +204,42 @@
 	}
 
 	.settings-toggle:hover {
+		color: var(--c-nav-link-hover);
+	}
+
+	.nav-user {
+		border-top: 1px solid var(--c-nav-border);
+		padding: 0.75rem 1.25rem;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+	}
+
+	.nav-username {
+		font-size: 0.8rem;
+		color: var(--c-nav-link);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.logout-btn {
+		background: none;
+		border: none;
+		color: var(--c-nav-link);
+		font-size: 0.75rem;
+		cursor: pointer;
+		padding: 0.2rem 0.4rem;
+		border-radius: 4px;
+		transition:
+			background 0.15s,
+			color 0.15s;
+		white-space: nowrap;
+	}
+
+	.logout-btn:hover {
+		background: var(--c-nav-border);
 		color: var(--c-nav-link-hover);
 	}
 

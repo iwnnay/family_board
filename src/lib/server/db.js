@@ -13,16 +13,41 @@ import * as completionsQ from './queries/completions.js';
 import * as notesQ from './queries/notes.js';
 import * as calendarQ from './queries/calendar.js';
 import * as listsQ from './queries/lists.js';
+import * as authQ from './queries/auth.js';
 
 // ---------------------------------------------------------------------------
 // Raw SQL used only for dev SQLite setup (avoids needing drizzle-kit push)
 // ---------------------------------------------------------------------------
 
 const SQLITE_SETUP_SQL = `
+  CREATE TABLE IF NOT EXISTS users (
+    id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+    username              TEXT NOT NULL UNIQUE,
+    password_hash         TEXT NOT NULL,
+    is_admin              INTEGER NOT NULL DEFAULT 0,
+    failed_login_attempts INTEGER NOT NULL DEFAULT 0,
+    locked_until          TEXT,
+    created_at            TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS sessions (
+    id         TEXT PRIMARY KEY,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    expires_at TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS invite_codes (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    code       TEXT NOT NULL UNIQUE,
+    created_by INTEGER NOT NULL REFERENCES users(id),
+    used_by    INTEGER REFERENCES users(id),
+    expires_at TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
   CREATE TABLE IF NOT EXISTS family (
-    id    INTEGER PRIMARY KEY AUTOINCREMENT,
-    name  TEXT NOT NULL,
-    color TEXT
+    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    name    TEXT NOT NULL,
+    color   TEXT,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL
   );
   CREATE TABLE IF NOT EXISTS chores (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -136,6 +161,7 @@ if (isMysql) {
 export const getFamilyMembers = () => familyQ.getFamilyMembers(db);
 export const addFamilyMember = (...a) => familyQ.addFamilyMember(db, ...a);
 export const updateFamilyMemberColor = (...a) => familyQ.updateFamilyMemberColor(db, ...a);
+export const updateFamilyMember = (...a) => familyQ.updateFamilyMember(db, ...a);
 export const deleteFamilyMember = (...a) => familyQ.deleteFamilyMember(db, ...a);
 
 export const getChores = () => choresQ.getChores(db);
@@ -174,3 +200,24 @@ export const deleteList = (...a) => listsQ.deleteList(db, ...a);
 export const addListItem = (...a) => listsQ.addListItem(db, ...a);
 export const checkListItem = (...a) => listsQ.checkListItem(db, ...a);
 export const restoreListItem = (...a) => listsQ.restoreListItem(db, ...a);
+
+export const hasAnyUsers = () => authQ.hasAnyUsers(db);
+export const createUser = (...a) => authQ.createUser(db, ...a);
+export const getUserByUsername = (...a) => authQ.getUserByUsername(db, ...a);
+export const getUserById = (...a) => authQ.getUserById(db, ...a);
+export const getAllUsers = () => authQ.getAllUsers(db);
+export const deleteUser = (...a) => authQ.deleteUser(db, ...a);
+export const updatePassword = (...a) => authQ.updatePassword(db, ...a);
+export const incrementFailedLogins = (...a) => authQ.incrementFailedLogins(db, ...a);
+export const resetFailedLogins = (...a) => authQ.resetFailedLogins(db, ...a);
+export const createSession = (...a) => authQ.createSession(db, ...a);
+export const getSession = (...a) => authQ.getSession(db, ...a);
+export const deleteSession = (...a) => authQ.deleteSession(db, ...a);
+export const deleteExpiredSessions = () => authQ.deleteExpiredSessions(db);
+export const deleteUserSessions = (...a) => authQ.deleteUserSessions(db, ...a);
+export const createInviteCode = (...a) => authQ.createInviteCode(db, ...a);
+export const getInviteCode = (...a) => authQ.getInviteCode(db, ...a);
+export const markInviteUsed = (...a) => authQ.markInviteUsed(db, ...a);
+export const getActiveInvites = () => authQ.getActiveInvites(db);
+export const getUserFamilyMember = (...a) => authQ.getUserFamilyMember(db, ...a);
+export const linkFamilyMemberToUser = (...a) => authQ.linkFamilyMemberToUser(db, ...a);

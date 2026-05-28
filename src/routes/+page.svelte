@@ -6,9 +6,6 @@
 
 	let { data } = $props();
 
-	let showMemberModal = $state(false);
-	let pendingChoreId = $state(null);
-
 	// ── note modals ───────────────────────────────────────────────────────────
 	let noteModal = $state(null); // null | 'read' | 'edit'
 	let activeNote = $state(null);
@@ -155,31 +152,9 @@
 
 	async function handleChoreClick(chore) {
 		if (chore.status === 'completed') return;
-
-		if (!data.currentMember) {
-			pendingChoreId = chore.id;
-			showMemberModal = true;
-			return;
-		}
-
 		const fd = new FormData();
 		fd.set('chore_id', chore.id);
 		await submitAction('?/complete', fd);
-	}
-
-	async function completeWithMember(memberId) {
-		const fd = new FormData();
-		fd.set('chore_id', pendingChoreId);
-		fd.set('member_id', memberId);
-		showMemberModal = false;
-		pendingChoreId = null;
-		await submitAction('?/complete', fd);
-	}
-
-	async function handleMemberChange(e) {
-		const fd = new FormData();
-		fd.set('member_id', e.target.value);
-		await submitAction('?/selectMember', fd);
 	}
 
 	function completedStyle(chore) {
@@ -204,14 +179,6 @@
 
 <div class="page-header">
 	<h1>Chores</h1>
-	<select id="who-dis" class:unselected={!data.currentMember} class:selected={data.currentMember} onchange={handleMemberChange} aria-label="Who dis?">
-		<option value="">Who dis?</option>
-		{#each data.family as member}
-			<option value={member.id} selected={data.currentMember?.id === member.id}>
-				{member.name}
-			</option>
-		{/each}
-	</select>
 </div>
 
 {#if data.family.length === 0}
@@ -262,30 +229,6 @@
 {/if}
 
 <CalendarStrip entries={data.calendarEntries} onChipClick={(entry) => openCalendarEntry(entry.id)} label="Upcoming Events" />
-
-{#if showMemberModal}
-	<div
-		class="modal-overlay"
-		role="dialog"
-		aria-modal="true"
-		onclick={() => {
-			showMemberModal = false;
-			pendingChoreId = null;
-		}}
-	>
-		<div class="modal" onclick={(e) => e.stopPropagation()} role="presentation">
-			<h2>Who are you?</h2>
-			<p>Pick your name to log this chore.</p>
-			<div class="member-list">
-				{#each data.family as member}
-					<button class="member-btn" onclick={() => completeWithMember(member.id)}>
-						{member.name}
-					</button>
-				{/each}
-			</div>
-		</div>
-	</div>
-{/if}
 
 <!-- ── note read modal ────────────────────────────────────────────────────── -->
 {#if noteModal === 'read' && activeNote}

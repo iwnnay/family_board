@@ -1,9 +1,40 @@
 import { mysqlTable, varchar, int } from 'drizzle-orm/mysql-core';
 
+export const users = mysqlTable('users', {
+	id: int('id').primaryKey().autoincrement(),
+	username: varchar('username', { length: 100 }).notNull().unique(),
+	password_hash: varchar('password_hash', { length: 255 }).notNull(),
+	is_admin: int('is_admin').notNull().default(0),
+	failed_login_attempts: int('failed_login_attempts').notNull().default(0),
+	locked_until: varchar('locked_until', { length: 30 }),
+	created_at: varchar('created_at', { length: 30 }).notNull()
+});
+
+export const sessions = mysqlTable('sessions', {
+	id: varchar('id', { length: 64 }).primaryKey(),
+	user_id: int('user_id')
+		.notNull()
+		.references(() => users.id, { onDelete: 'cascade' }),
+	expires_at: varchar('expires_at', { length: 30 }).notNull(),
+	created_at: varchar('created_at', { length: 30 }).notNull()
+});
+
+export const invite_codes = mysqlTable('invite_codes', {
+	id: int('id').primaryKey().autoincrement(),
+	code: varchar('code', { length: 20 }).notNull().unique(),
+	created_by: int('created_by')
+		.notNull()
+		.references(() => users.id),
+	used_by: int('used_by').references(() => users.id),
+	expires_at: varchar('expires_at', { length: 30 }).notNull(),
+	created_at: varchar('created_at', { length: 30 }).notNull()
+});
+
 export const family = mysqlTable('family', {
 	id: int('id').primaryKey().autoincrement(),
 	name: varchar('name', { length: 255 }).notNull(),
-	color: varchar('color', { length: 50 })
+	color: varchar('color', { length: 50 }),
+	user_id: int('user_id').references(() => users.id, { onDelete: 'set null' })
 });
 
 export const chores = mysqlTable('chores', {

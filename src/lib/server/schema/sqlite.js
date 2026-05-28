@@ -1,9 +1,40 @@
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 
+export const users = sqliteTable('users', {
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	username: text('username').notNull().unique(),
+	password_hash: text('password_hash').notNull(),
+	is_admin: integer('is_admin').notNull().default(0),
+	failed_login_attempts: integer('failed_login_attempts').notNull().default(0),
+	locked_until: text('locked_until'),
+	created_at: text('created_at').notNull()
+});
+
+export const sessions = sqliteTable('sessions', {
+	id: text('id').primaryKey(),
+	user_id: integer('user_id')
+		.notNull()
+		.references(() => users.id, { onDelete: 'cascade' }),
+	expires_at: text('expires_at').notNull(),
+	created_at: text('created_at').notNull()
+});
+
+export const invite_codes = sqliteTable('invite_codes', {
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	code: text('code').notNull().unique(),
+	created_by: integer('created_by')
+		.notNull()
+		.references(() => users.id),
+	used_by: integer('used_by').references(() => users.id),
+	expires_at: text('expires_at').notNull(),
+	created_at: text('created_at').notNull()
+});
+
 export const family = sqliteTable('family', {
 	id: integer('id').primaryKey({ autoIncrement: true }),
 	name: text('name').notNull(),
-	color: text('color')
+	color: text('color'),
+	user_id: integer('user_id').references(() => users.id, { onDelete: 'set null' })
 });
 
 export const chores = sqliteTable('chores', {

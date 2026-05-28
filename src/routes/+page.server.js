@@ -23,36 +23,15 @@ export const actions = {
 		return { entry };
 	},
 
-	complete: async ({ request, cookies }) => {
+	complete: async ({ request, locals }) => {
 		const data = await request.formData();
 		const chore_id = Number(data.get('chore_id'));
-		const member_id_from_form = data.get('member_id');
 
-		let member_id = Number(cookies.get('member_id') || member_id_from_form);
-
-		if (!member_id) {
-			return fail(400, { error: 'No family member selected' });
+		if (!locals.currentMember) {
+			return fail(400, { error: 'No family member linked to your account' });
 		}
 
-		if (member_id_from_form) {
-			cookies.set('member_id', String(member_id_from_form), { path: '/', maxAge: 60 * 60 * 24 * 365, secure: false });
-			member_id = Number(member_id_from_form);
-		}
-
-		await completeChore(chore_id, member_id);
-		return { success: true };
-	},
-
-	selectMember: async ({ request, cookies }) => {
-		const data = await request.formData();
-		const member_id = data.get('member_id');
-
-		if (member_id) {
-			cookies.set('member_id', String(member_id), { path: '/', maxAge: 60 * 60 * 24 * 365, secure: false });
-		} else {
-			cookies.delete('member_id', { path: '/', secure: false });
-		}
-
+		await completeChore(chore_id, locals.currentMember.id);
 		return { success: true };
 	}
 };

@@ -1,7 +1,10 @@
 import { getFamilyMembers, addFamilyMember, updateFamilyMemberColor, deleteFamilyMember } from '$lib/server/db';
-import { fail } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 
-export async function load() {
+export async function load({ locals }) {
+	if (!locals.user?.is_admin) {
+		throw redirect(302, '/');
+	}
 	return { family: await getFamilyMembers() };
 }
 

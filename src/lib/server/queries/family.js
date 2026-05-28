@@ -13,6 +13,10 @@ export async function updateFamilyMemberColor(db, id, color) {
 	await db.update(family).set({ color }).where(eq(family.id, id));
 }
 
+export async function updateFamilyMember(db, id, { name, color }) {
+	await db.update(family).set({ name, color }).where(eq(family.id, id));
+}
+
 export async function deleteFamilyMember(db, id) {
 	await db.delete(family).where(eq(family.id, id));
 }

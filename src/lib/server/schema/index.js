@@ -12,4 +12,5 @@ import * as mysqlSchema from './mysql.js';
 const url = process.env.DATABASE_URL ?? '';
 export const isMysql = url.startsWith('mysql://') || url.startsWith('mariadb://');
 
-export const { family, chores, chores_completed, notes, note_bodies, user_pins, recent_events, locations, calendar_entries, lists, list_items } = isMysql ? mysqlSchema : sqliteSchema;
+export const { users, sessions, invite_codes, family, chores, chores_completed, notes, note_bodies, user_pins, recent_events, locations, calendar_entries, lists, list_items } =
+	isMysql ? mysqlSchema : sqliteSchema;
