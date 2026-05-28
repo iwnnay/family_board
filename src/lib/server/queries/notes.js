@@ -1,14 +1,15 @@
 import { eq, desc, and, gte } from 'drizzle-orm';
 import { notes, note_bodies, user_pins, recent_events, family } from '../schema/index.js';
+import { toUtcString } from '$lib/time.js';
 
 function nowStr() {
-	return new Date().toISOString().replace('T', ' ').substring(0, 19);
+	return toUtcString();
 }
 
 function thirtyDaysAgo() {
 	const d = new Date();
 	d.setDate(d.getDate() - 30);
-	return d.toISOString().replace('T', ' ').substring(0, 19);
+	return toUtcString(d);
 }
 
 export async function getNotes(db, userId = null) {
@@ -29,7 +30,10 @@ export async function getNotes(db, userId = null) {
 		return rows.map((n) => ({ ...n, pinned: false }));
 	}
 
-	const pins = await db.select({ rel_id: user_pins.rel_id }).from(user_pins).where(and(eq(user_pins.user_id, userId), eq(user_pins.rel_type, 'note')));
+	const pins = await db
+		.select({ rel_id: user_pins.rel_id })
+		.from(user_pins)
+		.where(and(eq(user_pins.user_id, userId), eq(user_pins.rel_type, 'note')));
 
 	const pinnedIds = new Set(pins.map((p) => p.rel_id));
 	const pinned = rows.filter((n) => pinnedIds.has(n.id)).map((n) => ({ ...n, pinned: true }));

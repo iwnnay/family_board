@@ -13,10 +13,10 @@ export const actions = {
 		const name = data.get('name')?.toString().trim();
 		const color = data.get('color')?.toString().trim();
 
-		if (!name) return fail(400, { profileError: 'Display name is required' });
+		if (!name) {return fail(400, { profileError: 'Display name is required' });}
 
 		const member = await getUserFamilyMember(locals.user.id);
-		if (!member) return fail(400, { profileError: 'No profile found' });
+		if (!member) {return fail(400, { profileError: 'No profile found' });}
 
 		await updateFamilyMember(member.id, { name, color });
 		return { profileSuccess: true };
@@ -28,9 +28,9 @@ export const actions = {
 		const newPassword = data.get('new_password')?.toString();
 		const confirmPassword = data.get('confirm_password')?.toString();
 
-		if (!currentPassword) return fail(400, { passwordError: 'Current password is required' });
-		if (!newPassword || newPassword.length < 8) return fail(400, { passwordError: 'New password must be at least 8 characters' });
-		if (newPassword !== confirmPassword) return fail(400, { passwordError: 'Passwords do not match' });
+		if (!currentPassword) {return fail(400, { passwordError: 'Current password is required' });}
+		if (!newPassword || newPassword.length < 8) {return fail(400, { passwordError: 'New password must be at least 8 characters' });}
+		if (newPassword !== confirmPassword) {return fail(400, { passwordError: 'Passwords do not match' });}
 
 		const user = await getUserById(locals.user.id);
 		let valid;
@@ -39,7 +39,7 @@ export const actions = {
 		} catch {
 			valid = false;
 		}
-		if (!valid) return fail(400, { passwordError: 'Current password is incorrect' });
+		if (!valid) {return fail(400, { passwordError: 'Current password is incorrect' });}
 
 		await updatePassword(locals.user.id, await hash(newPassword));
 		return { passwordSuccess: true };

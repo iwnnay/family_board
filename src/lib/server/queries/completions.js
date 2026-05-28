@@ -2,11 +2,7 @@ import { eq, sql } from 'drizzle-orm';
 import { chores_completed, chores, family } from '../schema/index.js';
 import { isMysql } from '../schema/index.js';
 import { getChoresWithStatus } from './chores.js';
-
-function toTimestamp(date) {
-	const pad = (n) => String(n).padStart(2, '0');
-	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-}
+import { toUtcString } from '$lib/time.js';
 
 // Date truncation to YYYY-MM differs between SQLite and MySQL
 function monthFilter(col, monthStr) {
@@ -17,7 +13,7 @@ function monthFilter(col, monthStr) {
 }
 
 export async function completeChore(db, chore_id, member_id, completedAt = new Date()) {
-	await db.insert(chores_completed).values({ chore_id, completed_by: member_id, completed_at: toTimestamp(completedAt) });
+	await db.insert(chores_completed).values({ chore_id, completed_by: member_id, completed_at: toUtcString(completedAt) });
 }
 
 export async function getStats(db, now = new Date()) {

@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import { getSession, deleteExpiredSessions, getUserFamilyMember, hasAnyUsers } from '$lib/server/db';
 
-const PUBLIC_PATHS = ['/login', '/setup', '/invite'];
+const PUBLIC_PATHS = ['/login', '/setup', '/invite', '/health'];
 
 function isPublic(pathname) {
 	return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));

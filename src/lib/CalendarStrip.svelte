@@ -1,17 +1,15 @@
 <script>
 	import { getHue } from '$lib/colors.js';
+	import { fmtMonthDay } from '$lib/format.js';
 
 	let { entries, onChipClick, label = 'Upcoming' } = $props();
 
 	function chipStyle(entry) {
-		if (!entry.created_by_color) return '';
+		if (!entry.created_by_color) {
+			return '';
+		}
 		const hue = getHue(entry.created_by_color);
 		return `background: hsl(${hue} 60% 94%); border-color: hsl(${hue} 45% 78%);`;
-	}
-
-	function fmtDate(str) {
-		const d = new Date(str);
-		return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
 	}
 </script>
 
@@ -20,7 +18,7 @@
 	<div class="strip">
 		{#each entries as entry (entry.id)}
 			<button class="chip" style={chipStyle(entry)} onclick={() => onChipClick(entry)}>
-				<span class="chip-date">{fmtDate(entry.start_time)}</span>
+				<span class="chip-date">{fmtMonthDay(entry.start_time)}</span>
 				<span class="chip-title">{entry.title}</span>
 			</button>
 		{/each}

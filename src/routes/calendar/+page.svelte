@@ -3,6 +3,8 @@
 	import { invalidateAll, goto } from '$app/navigation';
 	import CalendarStrip from '$lib/CalendarStrip.svelte';
 	import LocationPicker from '$lib/LocationPicker.svelte';
+	import { fmtTime, fmtDateLong } from '$lib/format.js';
+	import { parseUtc } from '$lib/time.js';
 
 	let { data } = $props();
 
@@ -25,13 +27,13 @@
 	});
 
 	function entriesForDay(day) {
-		if (!day) return [];
+		if (!day) {return [];}
 		const dateStr = `${data.year}-${String(data.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 		return data.entries.filter((e) => e.start_time.startsWith(dateStr)).sort((a, b) => a.start_time.localeCompare(b.start_time));
 	}
 
 	function isToday(day) {
-		if (!day) return false;
+		if (!day) {return false;}
 		const today = new Date();
 		return today.getFullYear() === data.year && today.getMonth() + 1 === data.month && today.getDate() === day;
 	}
@@ -98,8 +100,8 @@
 		formTitle = entry.title;
 		formLocationId = entry.location_id ? String(entry.location_id) : '';
 		formDescription = entry.description ?? '';
-		formDuration = Math.round((new Date(entry.end_time) - new Date(entry.start_time)) / 60000);
-		const d = new Date(entry.start_time);
+		formDuration = Math.round((parseUtc(entry.end_time) - parseUtc(entry.start_time)) / 60000);
+		const d = parseUtc(entry.start_time);
 		formStartTime = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 		entryModal = 'form';
 	}
@@ -131,26 +133,12 @@
 		{ label: '12 hr', value: 720 }
 	];
 
-	// ── display helpers ───────────────────────────────────────────────────────
-	function fmtTime(str) {
-		return new Date(str).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
-	}
-
-	function fmtDate(str) {
-		return new Date(str).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-	}
-
 	function fmtTimeRange(entry) {
-		return `${fmtDate(entry.start_time)}, ${fmtTime(entry.start_time)} – ${fmtTime(entry.end_time)}`;
+		return `${fmtDateLong(entry.start_time)}, ${fmtTime(entry.start_time)} – ${fmtTime(entry.end_time)}`;
 	}
 
 	function mapsUrl(address) {
 		return `https://maps.google.com/?q=${encodeURIComponent(address)}`;
-	}
-
-	function stripDate(str) {
-		const d = new Date(str);
-		return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
 	}
 </script>
 
@@ -312,7 +300,7 @@
 								type="submit"
 								class="btn-ghost btn-danger"
 								onclick={(e) => {
-									if (!confirm('Delete this event?')) e.preventDefault();
+									if (!confirm('Delete this event?')) {e.preventDefault();}
 								}}
 							>
 								🗑 Delete

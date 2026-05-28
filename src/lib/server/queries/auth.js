@@ -1,11 +1,7 @@
 import crypto from 'node:crypto';
 import { eq, and, isNull, gt, count } from 'drizzle-orm';
 import { users, sessions, invite_codes, family } from '../schema/index.js';
-
-function toTimestamp(date) {
-	const pad = (n) => String(n).padStart(2, '0');
-	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-}
+import { toUtcString } from '$lib/time.js';
 
 // ── Users ────────────────────────────────────────────────────────────────────
 
@@ -15,7 +11,7 @@ export async function hasAnyUsers(db) {
 }
 
 export async function createUser(db, { username, passwordHash, isAdmin }) {
-	const now = toTimestamp(new Date());
+	const now = toUtcString(new Date());
 	const [row] = await db
 		.insert(users)
 		.values({
@@ -70,7 +66,7 @@ export async function incrementFailedLogins(db, userId) {
 
 	if (attempts >= 5) {
 		const lockUntil = new Date(Date.now() + 15 * 60 * 1000);
-		updates.locked_until = toTimestamp(lockUntil);
+		updates.locked_until = toUtcString(lockUntil);
 	}
 
 	await db.update(users).set(updates).where(eq(users.id, userId));
@@ -90,15 +86,15 @@ export async function createSession(db, userId) {
 	await db.insert(sessions).values({
 		id,
 		user_id: userId,
-		expires_at: toTimestamp(expiresAt),
-		created_at: toTimestamp(now)
+		expires_at: toUtcString(expiresAt),
+		created_at: toUtcString(now)
 	});
 
 	return id;
 }
 
 export async function getSession(db, sessionId) {
-	const now = toTimestamp(new Date());
+	const now = toUtcString(new Date());
 	const [row] = await db
 		.select({
 			session: {
@@ -128,7 +124,7 @@ export async function deleteSession(db, sessionId) {
 }
 
 export async function deleteExpiredSessions(db) {
-	const now = toTimestamp(new Date());
+	const now = toUtcString(new Date());
 	await db.delete(sessions).where(gt(now, sessions.expires_at));
 }
 
@@ -148,8 +144,8 @@ export async function createInviteCode(db, createdBy) {
 		.values({
 			code,
 			created_by: createdBy,
-			expires_at: toTimestamp(expiresAt),
-			created_at: toTimestamp(now)
+			expires_at: toUtcString(expiresAt),
+			created_at: toUtcString(now)
 		})
 		.returning();
 
@@ -157,7 +153,7 @@ export async function createInviteCode(db, createdBy) {
 }
 
 export async function getInviteCode(db, code) {
-	const now = toTimestamp(new Date());
+	const now = toUtcString(new Date());
 	const [row] = await db
 		.select()
 		.from(invite_codes)
@@ -170,7 +166,7 @@ export async function markInviteUsed(db, codeId, usedByUserId) {
 }
 
 export async function getActiveInvites(db) {
-	const now = toTimestamp(new Date());
+	const now = toUtcString(new Date());
 	return db
 		.select()
 		.from(invite_codes)

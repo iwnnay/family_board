@@ -1,41 +1,36 @@
 import { getFamilyMembers, addFamilyMember, updateFamilyMemberColor, deleteFamilyMember } from '$lib/server/db';
-import { fail, redirect } from '@sveltejs/kit';
+import { requireAdmin, parseTrimmed, parseString, parseNumber, badRequest } from '$lib/server/form-utils.js';
 
 export async function load({ locals }) {
-	if (!locals.user?.is_admin) {
-		throw redirect(302, '/');
-	}
+	requireAdmin(locals);
 	return { family: await getFamilyMembers() };
 }
 
 export const actions = {
-	add: async ({ request }) => {
+	add: async ({ request, locals }) => {
+		requireAdmin(locals);
 		const data = await request.formData();
-		const name = (data.get('name') ?? '').toString().trim();
-		const color = (data.get('color') ?? '').toString() || 'blue';
-		if (!name) {
-			return fail(400, { error: 'Name is required' });
-		}
+		const name = parseTrimmed(data, 'name');
+		const color = parseString(data, 'color') || 'blue';
+		if (!name) {return badRequest('Name is required');}
 		await addFamilyMember(name, color);
 		return { success: true };
 	},
 
-	setColor: async ({ request }) => {
+	setColor: async ({ request, locals }) => {
+		requireAdmin(locals);
 		const data = await request.formData();
-		const id = Number(data.get('id'));
-		const color = (data.get('color') ?? '').toString();
-		if (id && color) {
-			await updateFamilyMemberColor(id, color);
-		}
+		const id = parseNumber(data, 'id');
+		const color = parseString(data, 'color');
+		if (id && color) {await updateFamilyMemberColor(id, color);}
 		return { success: true };
 	},
 
-	delete: async ({ request }) => {
+	delete: async ({ request, locals }) => {
+		requireAdmin(locals);
 		const data = await request.formData();
-		const id = data.get('id');
-		if (id) {
-			await deleteFamilyMember(Number(id));
-		}
+		const id = parseNumber(data, 'id');
+		if (id) {await deleteFamilyMember(id);}
 		return { success: true };
 	}
 };

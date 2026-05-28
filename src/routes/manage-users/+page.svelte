@@ -1,6 +1,8 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
+	import FeedbackMessage from '$lib/components/FeedbackMessage.svelte';
+	import { fmtDate } from '$lib/format.js';
 
 	let { data, form } = $props();
 
@@ -25,14 +27,13 @@
 	}
 </script>
 
-<h1>Manage Users</h1>
+<h1 class="page-title-lg">Manage Users</h1>
 
-<!-- Invite Codes -->
 <section class="section-card">
-	<h2>Invite Codes</h2>
+	<h2 class="section-heading">Invite Codes</h2>
 
 	<form method="POST" action="?/createInvite" use:enhance>
-		<button type="submit" class="btn-primary">Generate Invite</button>
+		<button type="submit" class="btn btn-blue">Generate Invite</button>
 	</form>
 
 	{#if form?.newInviteCode}
@@ -47,7 +48,7 @@
 			{#each data.invites as invite (invite.id)}
 				<div class="invite-row">
 					<code class="invite-code">{invite.code}</code>
-					<span class="invite-expires">Expires {new Date(invite.expires_at).toLocaleDateString()}</span>
+					<span class="invite-expires">Expires {fmtDate(invite.expires_at)}</span>
 				</div>
 			{/each}
 		</div>
@@ -56,21 +57,10 @@
 	{/if}
 </section>
 
-<!-- Users -->
 <section class="section-card">
-	<h2>Users ({data.users.length})</h2>
+	<h2 class="section-heading">Users ({data.users.length})</h2>
 
-	{#if form?.error}
-		<div class="error">{form.error}</div>
-	{/if}
-
-	{#if form?.resetSuccess}
-		<div class="success">Password reset successfully. User has been logged out.</div>
-	{/if}
-
-	{#if form?.deleteSuccess}
-		<div class="success">User deleted.</div>
-	{/if}
+	<FeedbackMessage error={form?.error ?? ''} success={form?.resetSuccess ? 'Password reset successfully. User has been logged out.' : form?.deleteSuccess ? 'User deleted.' : ''} />
 
 	{#each data.users as user (user.id)}
 		<div class="user-row">
@@ -79,14 +69,14 @@
 				{#if user.is_admin}
 					<span class="admin-badge">Admin</span>
 				{/if}
-				<span class="user-date">Joined {new Date(user.created_at).toLocaleDateString()}</span>
+				<span class="user-date">Joined {fmtDate(user.created_at)}</span>
 			</div>
 
 			{#if !user.is_admin}
 				<div class="user-actions">
 					<form method="POST" action="?/resetPassword" use:enhance class="reset-form">
 						<input type="hidden" name="user_id" value={user.id} />
-						<input type="password" name="new_password" placeholder="New password" class="input-sm" autocomplete="new-password" />
+						<input type="password" name="new_password" placeholder="New password" class="input input-sm reset-input" autocomplete="new-password" />
 						<button type="submit" class="btn-reset">Reset</button>
 					</form>
 					<form
@@ -94,7 +84,7 @@
 						action="?/deleteUser"
 						use:enhance
 						onsubmit={(e) => {
-							if (!confirm(`Delete user "${user.username}"? This cannot be undone.`)) e.preventDefault();
+							if (!confirm(`Delete user "${user.username}"? This cannot be undone.`)) {e.preventDefault();}
 						}}
 					>
 						<input type="hidden" name="user_id" value={user.id} />
@@ -107,62 +97,6 @@
 </section>
 
 <style>
-	h1 {
-		font-size: 1.75rem;
-		font-weight: 700;
-		color: #1e293b;
-		margin-bottom: 1.5rem;
-	}
-
-	h2 {
-		font-size: 1.1rem;
-		font-weight: 600;
-		color: #374151;
-		margin-bottom: 1rem;
-	}
-
-	.section-card {
-		background: #fff;
-		border-radius: 12px;
-		padding: 1.5rem;
-		border: 1px solid #e2e8f0;
-		margin-bottom: 1.5rem;
-		max-width: 600px;
-	}
-
-	.error {
-		background: #fef2f2;
-		color: #dc2626;
-		padding: 0.5rem 0.75rem;
-		border-radius: 6px;
-		font-size: 0.85rem;
-		margin-bottom: 1rem;
-	}
-
-	.success {
-		background: #f0fdf4;
-		color: #15803d;
-		padding: 0.5rem 0.75rem;
-		border-radius: 6px;
-		font-size: 0.85rem;
-		margin-bottom: 1rem;
-	}
-
-	.btn-primary {
-		padding: 0.5rem 1.25rem;
-		background: #2563eb;
-		color: #fff;
-		border: none;
-		border-radius: 8px;
-		font-size: 0.9rem;
-		font-weight: 600;
-		cursor: pointer;
-	}
-
-	.btn-primary:hover {
-		background: #1d4ed8;
-	}
-
 	.invite-result {
 		display: block;
 		width: 100%;
@@ -281,58 +215,11 @@
 		gap: 0.35rem;
 	}
 
-	.input-sm {
-		padding: 0.3rem 0.5rem;
-		border: 1px solid #d1d5db;
-		border-radius: 6px;
-		font-size: 0.82rem;
+	.reset-input {
 		width: 140px;
 	}
 
-	.input-sm:focus {
-		outline: 2px solid #6b7280;
-		outline-offset: 1px;
-	}
-
-	.btn-reset {
-		padding: 0.3rem 0.65rem;
-		background: #f1f5f9;
-		border: 1px solid #cbd5e1;
-		border-radius: 6px;
-		font-size: 0.82rem;
-		cursor: pointer;
-		color: #475569;
-		white-space: nowrap;
-	}
-
-	.btn-reset:hover {
-		background: #e2e8f0;
-	}
-
-	.btn-delete {
-		padding: 0.3rem 0.65rem;
-		background: #fef2f2;
-		border: 1px solid #fecaca;
-		border-radius: 6px;
-		font-size: 0.82rem;
-		cursor: pointer;
-		color: #dc2626;
-		white-space: nowrap;
-	}
-
-	.btn-delete:hover {
-		background: #fee2e2;
-	}
-
 	@media (max-width: 640px) {
-		h1 {
-			font-size: 1.35rem;
-		}
-
-		.section-card {
-			padding: 1rem;
-		}
-
 		.user-row {
 			flex-direction: column;
 			align-items: flex-start;
@@ -347,8 +234,9 @@
 			flex: 1;
 		}
 
-		.input-sm {
+		.reset-input {
 			flex: 1;
+			width: auto;
 		}
 	}
 </style>

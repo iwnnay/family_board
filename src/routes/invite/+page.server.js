@@ -18,39 +18,39 @@ export const actions = {
 		const displayName = data.get('display_name')?.toString().trim();
 		const color = data.get('color')?.toString().trim() || 'blue';
 
-		if (!code) return fail(400, { error: 'Invite code is required', username, displayName, color });
+		if (!code) {return fail(400, { error: 'Invite code is required', username, displayName, color });}
 
 		const invite = await getInviteCode(code);
 		if (!invite)
-			return fail(400, {
+			{return fail(400, {
 				error: 'Invalid or expired invite code',
 				username,
 				displayName,
 				color,
 				code
-			});
+			});}
 
-		if (!username) return fail(400, { error: 'Username is required', displayName, color, code });
+		if (!username) {return fail(400, { error: 'Username is required', displayName, color, code });}
 		if (!password || password.length < 8)
-			return fail(400, {
+			{return fail(400, {
 				error: 'Password must be at least 8 characters',
 				username,
 				displayName,
 				color,
 				code
-			});
+			});}
 		if (password !== confirmPassword)
-			return fail(400, {
+			{return fail(400, {
 				error: 'Passwords do not match',
 				username,
 				displayName,
 				color,
 				code
-			});
-		if (!displayName) return fail(400, { error: 'Display name is required', username, color, code });
+			});}
+		if (!displayName) {return fail(400, { error: 'Display name is required', username, color, code });}
 
 		const existing = await getUserByUsername(username);
-		if (existing) return fail(400, { error: 'Username already taken', displayName, color, code });
+		if (existing) {return fail(400, { error: 'Username already taken', displayName, color, code });}
 
 		const passwordHash = await hash(password);
 		const user = await createUser({ username, passwordHash, isAdmin: false });

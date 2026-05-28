@@ -11,7 +11,7 @@ export const actions = {
 		const memberId = Number(cookies.get('member_id') || 0) || null;
 		const data = await request.formData();
 		const title = (data.get('title') ?? '').toString().trim();
-		if (!title) return fail(400, { error: 'Title is required' });
+		if (!title) {return fail(400, { error: 'Title is required' });}
 		await createList({ title, created_by: memberId });
 		return { success: true };
 	},
@@ -19,7 +19,7 @@ export const actions = {
 	delete: async ({ request }) => {
 		const data = await request.formData();
 		const id = data.get('id');
-		if (!id) return fail(400, { error: 'Missing id' });
+		if (!id) {return fail(400, { error: 'Missing id' });}
 		await deleteList(Number(id));
 		return { success: true };
 	},
@@ -28,7 +28,7 @@ export const actions = {
 		const data = await request.formData();
 		const list_id = Number(data.get('list_id'));
 		const item = (data.get('item') ?? '').toString().trim();
-		if (!item) return fail(400, { error: 'Item text is required' });
+		if (!item) {return fail(400, { error: 'Item text is required' });}
 		await addListItem({ list_id, item });
 		return { success: true };
 	},

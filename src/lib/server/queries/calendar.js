@@ -1,12 +1,13 @@
 import { eq, and, gte, lte, asc, desc, ne } from 'drizzle-orm';
 import { calendar_entries, locations, recent_events, family } from '../schema/index.js';
+import { toUtcString, parseUtc } from '$lib/time.js';
 
 function nowStr() {
-	return new Date().toISOString().replace('T', ' ').substring(0, 19);
+	return toUtcString();
 }
 
 function fmtStartTime(startStr) {
-	const d = new Date(startStr);
+	const d = parseUtc(startStr);
 	return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
@@ -22,12 +23,18 @@ export async function getLocations(db) {
 }
 
 export async function createLocation(db, { name, address }) {
-	const [result] = await db.insert(locations).values({ name, address: address || null }).returning({ id: locations.id });
+	const [result] = await db
+		.insert(locations)
+		.values({ name, address: address || null })
+		.returning({ id: locations.id });
 	return result.id;
 }
 
 export async function updateLocation(db, id, { name, address }) {
-	await db.update(locations).set({ name, address: address || null }).where(eq(locations.id, id));
+	await db
+		.update(locations)
+		.set({ name, address: address || null })
+		.where(eq(locations.id, id));
 }
 
 export async function deleteLocation(db, id) {
@@ -53,13 +60,7 @@ export async function getCalendarEntries(db, { from, to } = {}) {
 		.from(calendar_entries)
 		.leftJoin(locations, eq(locations.id, calendar_entries.location_id))
 		.leftJoin(family, eq(family.id, calendar_entries.created_by))
-		.where(
-			from && to
-				? and(gte(calendar_entries.start_time, from), lte(calendar_entries.start_time, to))
-				: from
-					? gte(calendar_entries.start_time, from)
-					: undefined
-		)
+		.where(from && to ? and(gte(calendar_entries.start_time, from), lte(calendar_entries.start_time, to)) : from ? gte(calendar_entries.start_time, from) : undefined)
 		.orderBy(asc(calendar_entries.start_time));
 	return rows;
 }
@@ -116,10 +117,17 @@ export async function duplicateCalendarEntry(db, id, created_by) {
 		return null;
 	}
 	const now = new Date();
-	const original = new Date(entry.start_time);
-	const duration = new Date(entry.end_time) - new Date(entry.start_time);
+	const original = parseUtc(entry.start_time);
+	const duration = parseUtc(entry.end_time) - parseUtc(entry.start_time);
+	// Re-anchor to today, preserving the original time-of-day in local time
 	const newStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), original.getHours(), original.getMinutes());
 	const newEnd = new Date(newStart.getTime() + duration);
-	const fmt = (d) => d.toISOString().replace('T', ' ').substring(0, 19);
-	return createCalendarEntry(db, { title: entry.title, location_id: entry.location_id, start_time: fmt(newStart), end_time: fmt(newEnd), description: entry.description, created_by });
+	return createCalendarEntry(db, {
+		title: entry.title,
+		location_id: entry.location_id,
+		start_time: toUtcString(newStart),
+		end_time: toUtcString(newEnd),
+		description: entry.description,
+		created_by
+	});
 }

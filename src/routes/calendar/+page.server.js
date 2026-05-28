@@ -1,4 +1,14 @@
-import { getCalendarEntries, getCalendarEntryById, getLocations, createCalendarEntry, updateCalendarEntry, deleteCalendarEntry, duplicateCalendarEntry, createLocation } from '$lib/server/db';
+import {
+	getCalendarEntries,
+	getCalendarEntryById,
+	getLocations,
+	createCalendarEntry,
+	updateCalendarEntry,
+	deleteCalendarEntry,
+	duplicateCalendarEntry,
+	createLocation
+} from '$lib/server/db';
+import { toUtcString } from '$lib/time.js';
 import { fail } from '@sveltejs/kit';
 
 function monthRange(year, month) {
@@ -16,14 +26,11 @@ export async function load({ url }) {
 	const { from, to } = monthRange(year, month);
 	const threeMonthsOut = new Date(now);
 	threeMonthsOut.setMonth(threeMonthsOut.getMonth() + 3);
-	const stripTo = threeMonthsOut.toISOString().replace('T', ' ').substring(0, 19);
-	const todayStr = now.toISOString().replace('T', ' ').substring(0, 10) + ' 00:00:00';
+	const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+	const todayStr = toUtcString(startOfDay);
+	const stripTo = toUtcString(threeMonthsOut);
 
-	const [entries, stripEntries, locations] = await Promise.all([
-		getCalendarEntries({ from, to }),
-		getCalendarEntries({ from: todayStr, to: stripTo }),
-		getLocations()
-	]);
+	const [entries, stripEntries, locations] = await Promise.all([getCalendarEntries({ from, to }), getCalendarEntries({ from: todayStr, to: stripTo }), getLocations()]);
 
 	return { entries, stripEntries, locations, year, month };
 }
@@ -57,14 +64,15 @@ export const actions = {
 			return fail(400, { error: 'Start time is required' });
 		}
 
+		// The HTML datetime-local input sends 'YYYY-MM-DDTHH:MM' which JS parses as local time;
+		// toUtcString converts to UTC for storage
 		const start = new Date(start_time);
 		const end = new Date(start.getTime() + duration_minutes * 60000);
-		const fmt = (d) => d.toISOString().replace('T', ' ').substring(0, 19);
 
 		if (id) {
-			await updateCalendarEntry(Number(id), { title, location_id, start_time: fmt(start), end_time: fmt(end), description });
+			await updateCalendarEntry(Number(id), { title, location_id, start_time: toUtcString(start), end_time: toUtcString(end), description });
 		} else {
-			await createCalendarEntry({ title, location_id, start_time: fmt(start), end_time: fmt(end), description, created_by: memberId });
+			await createCalendarEntry({ title, location_id, start_time: toUtcString(start), end_time: toUtcString(end), description, created_by: memberId });
 		}
 
 		return { success: true };

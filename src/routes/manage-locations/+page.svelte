@@ -1,10 +1,11 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
+	import Modal from '$lib/components/Modal.svelte';
 
 	let { data } = $props();
 
-	let editing = $state(null); // { id, name, address } | null
+	let editing = $state(null);
 	let showForm = $state(false);
 	let formName = $state('');
 	let formAddress = $state('');
@@ -39,7 +40,7 @@
 </script>
 
 <div class="page-header">
-	<h1>Manage Locations</h1>
+	<h1 class="page-title">Manage Locations</h1>
 	<button class="btn btn-primary" onclick={openCreate}>+ New Location</button>
 </div>
 
@@ -67,21 +68,18 @@
 					<form
 						method="POST"
 						action="?/delete"
-						use:enhance={() => {
-							return async ({ update }) => {
+						use:enhance={() =>
+							async ({ update }) => {
 								await update();
 								await invalidateAll();
-							};
-						}}
+							}}
 					>
 						<input type="hidden" name="id" value={loc.id} />
 						<button
 							type="submit"
 							class="btn-ghost btn-danger"
 							onclick={(e) => {
-								if (!confirm(`Delete "${loc.name}"?`)) {
-									e.preventDefault();
-								}
+								if (!confirm(`Delete "${loc.name}"?`)) {e.preventDefault();}
 							}}
 						>
 							Delete
@@ -93,40 +91,35 @@
 	</div>
 {/if}
 
-{#if showForm}
-	<div class="modal-backdrop" role="button" tabindex="-1" onclick={closeForm} onkeydown={() => {}}>
-		<div class="modal" role="dialog" onclick={(e) => e.stopPropagation()} onkeydown={() => {}}>
-			<h2>{editing ? 'Edit Location' : 'New Location'}</h2>
-			<form
-				method="POST"
-				action="?/save"
-				use:enhance={() => {
-					return async ({ update }) => {
-						await update();
-						await invalidateAll();
-						closeForm();
-					};
-				}}
-			>
-				{#if editing}
-					<input type="hidden" name="id" value={editing.id} />
-				{/if}
-				<div class="field">
-					<label for="loc-name">Name</label>
-					<input id="loc-name" class="input" type="text" name="name" bind:value={formName} required />
-				</div>
-				<div class="field">
-					<label for="loc-address">Address</label>
-					<input id="loc-address" class="input" type="text" name="address" placeholder="Optional" bind:value={formAddress} />
-				</div>
-				<div class="form-footer">
-					<button type="button" class="btn btn-cancel" onclick={closeForm}>Cancel</button>
-					<button type="submit" class="btn btn-primary">Save</button>
-				</div>
-			</form>
+<Modal open={showForm} onClose={closeForm} title={editing ? 'Edit Location' : 'New Location'} width={420}>
+	<form
+		method="POST"
+		action="?/save"
+		use:enhance={() =>
+			async ({ update }) => {
+				await update();
+				await invalidateAll();
+				closeForm();
+			}}
+		class="stack"
+	>
+		{#if editing}
+			<input type="hidden" name="id" value={editing.id} />
+		{/if}
+		<div class="field">
+			<label class="field-label" for="loc-name">Name</label>
+			<input id="loc-name" class="input" type="text" name="name" bind:value={formName} required />
 		</div>
-	</div>
-{/if}
+		<div class="field">
+			<label class="field-label" for="loc-address">Address</label>
+			<input id="loc-address" class="input" type="text" name="address" placeholder="Optional" bind:value={formAddress} />
+		</div>
+		<div class="form-footer">
+			<button type="button" class="btn btn-cancel" onclick={closeForm}>Cancel</button>
+			<button type="submit" class="btn btn-primary">Save</button>
+		</div>
+	</form>
+</Modal>
 
 <style>
 	.page-header {
@@ -134,12 +127,8 @@
 		align-items: center;
 		justify-content: space-between;
 		margin-bottom: 1.5rem;
-	}
-
-	h1 {
-		font-size: 1.5rem;
-		font-weight: 700;
-		color: #1f2937;
+		flex-wrap: wrap;
+		gap: 0.5rem;
 	}
 
 	.search-bar {
@@ -147,12 +136,11 @@
 		align-items: center;
 		gap: 0.75rem;
 		margin-bottom: 1rem;
+		flex-wrap: wrap;
 	}
 
 	.search-input {
 		max-width: 320px;
-		font-family: inherit;
-		width: 100%;
 	}
 
 	.search-hint {
@@ -204,124 +192,14 @@
 		gap: 0.25rem;
 	}
 
-	/* modal */
-	.modal-backdrop {
-		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.4);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 100;
-	}
-
-	.modal {
-		background: #fff;
-		border-radius: 12px;
-		padding: 1.5rem;
-		width: min(420px, 95vw);
+	.stack {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
-		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-	}
-
-	.modal h2 {
-		font-size: 1.1rem;
-		font-weight: 700;
-		color: #1f2937;
-	}
-
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 0.3rem;
-	}
-
-	label {
-		font-size: 0.82rem;
-		font-weight: 600;
-		color: #374151;
-	}
-
-	.input {
-		border: 1px solid #d1d5db;
-		border-radius: 6px;
-		padding: 0.45rem 0.65rem;
-		font-size: 0.9rem;
-	}
-
-	.input:focus {
-		outline: 2px solid #6b7280;
-		outline-offset: 1px;
-	}
-
-	.form-footer {
-		display: flex;
-		justify-content: space-between;
-		padding-top: 0.25rem;
-	}
-
-	.btn {
-		padding: 0.45rem 1.1rem;
-		border-radius: 6px;
-		font-size: 0.9rem;
-		cursor: pointer;
-		border: 1px solid transparent;
-	}
-
-	.btn-primary {
-		background: #374151;
-		color: #fff;
-	}
-
-	.btn-primary:hover {
-		background: #1f2937;
-	}
-
-	.btn-cancel {
-		background: #f3f4f6;
-		color: #374151;
-		border-color: #d1d5db;
-	}
-
-	.btn-cancel:hover {
-		background: #e5e7eb;
-	}
-
-	.btn-ghost {
-		background: none;
-		border: none;
-		cursor: pointer;
-		font-size: 0.82rem;
-		color: #6b7280;
-		padding: 0.3rem 0.6rem;
-		border-radius: 4px;
-	}
-
-	.btn-ghost:hover {
-		background: rgba(0, 0, 0, 0.06);
-		color: #374151;
-	}
-
-	.btn-danger:hover {
-		color: #dc2626;
+		gap: 0.85rem;
+		padding: 0 0.1rem 0.25rem;
 	}
 
 	@media (max-width: 640px) {
-		.page-header {
-			flex-wrap: wrap;
-			gap: 0.5rem;
-		}
-
-		h1 {
-			font-size: 1.25rem;
-		}
-
-		.search-bar {
-			flex-wrap: wrap;
-		}
-
 		.search-input {
 			max-width: 100%;
 		}

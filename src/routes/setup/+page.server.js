@@ -23,10 +23,10 @@ export const actions = {
 		const displayName = data.get('display_name')?.toString().trim();
 		const color = data.get('color')?.toString().trim() || 'blue';
 
-		if (!username) return fail(400, { error: 'Username is required', displayName, color });
-		if (!password || password.length < 8) return fail(400, { error: 'Password must be at least 8 characters', username, displayName, color });
-		if (password !== confirmPassword) return fail(400, { error: 'Passwords do not match', username, displayName, color });
-		if (!displayName) return fail(400, { error: 'Display name is required', username, color });
+		if (!username) {return fail(400, { error: 'Username is required', displayName, color });}
+		if (!password || password.length < 8) {return fail(400, { error: 'Password must be at least 8 characters', username, displayName, color });}
+		if (password !== confirmPassword) {return fail(400, { error: 'Passwords do not match', username, displayName, color });}
+		if (!displayName) {return fail(400, { error: 'Display name is required', username, color });}
 
 		const passwordHash = await hash(password);
 		const user = await createUser({ username, passwordHash, isAdmin: true });

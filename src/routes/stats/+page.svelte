@@ -3,7 +3,7 @@
 	let { stats } = data;
 </script>
 
-<h1>Stats</h1>
+<h1 class="page-title-lg">Stats</h1>
 
 <div class="stats-grid">
 	<div class="stat-card">
@@ -37,13 +37,6 @@
 </div>
 
 <style>
-	h1 {
-		font-size: 1.75rem;
-		font-weight: 700;
-		color: #1e293b;
-		margin-bottom: 1.5rem;
-	}
-
 	.stats-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -101,10 +94,6 @@
 	}
 
 	@media (max-width: 640px) {
-		h1 {
-			font-size: 1.35rem;
-		}
-
 		.stats-grid {
 			grid-template-columns: 1fr;
 		}

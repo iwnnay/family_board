@@ -14,6 +14,7 @@ import * as notesQ from './queries/notes.js';
 import * as calendarQ from './queries/calendar.js';
 import * as listsQ from './queries/lists.js';
 import * as authQ from './queries/auth.js';
+import { registerHealthCheck } from './health.js';
 
 // ---------------------------------------------------------------------------
 // Raw SQL used only for dev SQLite setup (avoids needing drizzle-kit push)
@@ -153,6 +154,12 @@ if (isMysql) {
 	const sqlite = new Database(join(dbDir, 'family_board.db'));
 	db = createTestDb(sqlite); // createTestDb handles pragmas + schema setup
 }
+
+registerHealthCheck('db', async () => {
+	// A successful query confirms the connection + schema are usable
+	await db.select().from(sqliteSchema.family).limit(1);
+	return { dialect: isMysql ? 'mysql' : 'sqlite' };
+});
 
 // Re-export every query function bound to the app instance so that
 // route files keep their existing import style:

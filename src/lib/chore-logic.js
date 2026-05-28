@@ -1,3 +1,5 @@
+import { parseUtc } from './time.js';
+
 export const FREQ_ORDER = ['none', 'daily', 'weekly', 'monthly', 'yearly'];
 
 /**
@@ -43,7 +45,7 @@ export function categorizeChores(rows, now = new Date()) {
 			continue;
 		}
 
-		const completedAt = new Date(chore.completed_at);
+		const completedAt = parseUtc(chore.completed_at);
 
 		if (isDueAgain(chore.frequency, completedAt, now)) {
 			due.push({ ...chore, status: 'due' });

@@ -1,12 +1,14 @@
 import { getChoresWithStatus, completeChore, getRecentEvents, getCalendarEntries, getCalendarEntryById } from '$lib/server/db';
+import { toUtcString } from '$lib/time.js';
 import { fail } from '@sveltejs/kit';
 
 export async function load() {
 	const now = new Date();
 	const threeMonthsOut = new Date(now);
 	threeMonthsOut.setMonth(threeMonthsOut.getMonth() + 3);
-	const todayStr = now.toISOString().replace('T', ' ').substring(0, 10) + ' 00:00:00';
-	const stripTo = threeMonthsOut.toISOString().replace('T', ' ').substring(0, 19);
+	const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+	const todayStr = toUtcString(startOfDay);
+	const stripTo = toUtcString(threeMonthsOut);
 
 	const [chores, events, calendarEntries] = await Promise.all([getChoresWithStatus(), getRecentEvents(), getCalendarEntries({ from: todayStr, to: stripTo })]);
 	return { chores, events, calendarEntries };

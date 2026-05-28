@@ -2,6 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { verify } from '@node-rs/argon2';
 import { getUserByUsername, incrementFailedLogins, resetFailedLogins, createSession, hasAnyUsers } from '$lib/server/db';
 import { sessionCookieOptions } from '$lib/server/cookie-config.js';
+import { parseUtc } from '$lib/time.js';
 
 export async function load() {
 	if (!(await hasAnyUsers())) {
@@ -25,7 +26,7 @@ export const actions = {
 			return fail(400, { error: 'Invalid credentials', username });
 		}
 
-		if (user.locked_until && new Date(user.locked_until) > new Date()) {
+		if (user.locked_until && parseUtc(user.locked_until) > new Date()) {
 			return fail(429, { error: 'Account locked due to too many attempts. Try again later.', username });
 		}
 

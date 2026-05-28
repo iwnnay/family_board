@@ -42,7 +42,7 @@
 	}
 
 	async function saveNewLocation() {
-		if (!newName.trim()) return;
+		if (!newName.trim()) {return;}
 		saving = true;
 		const fd = new FormData();
 		fd.set('name', newName.trim());
@@ -90,7 +90,10 @@
 			placeholder="Search locations…"
 			bind:value={search}
 			onfocus={openDropdown}
-			oninput={() => { open = true; creating = false; }}
+			oninput={() => {
+				open = true;
+				creating = false;
+			}}
 			onkeydown={onInputKeydown}
 			autocomplete="off"
 		/>

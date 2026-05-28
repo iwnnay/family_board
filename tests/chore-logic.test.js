@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import Database from 'better-sqlite3';
 import { eq } from 'drizzle-orm';
-import { createTestDb } from './db.js';
-import { isDueAgain, categorizeChores } from '../chore-logic.js';
-import { family as familyTable, chores as choresTable } from './schema/sqlite.js';
-import { addFamilyMember } from './queries/family.js';
-import { addChore, getChoresWithStatus } from './queries/chores.js';
-import { completeChore } from './queries/completions.js';
+import { createTestDb } from '$lib/server/db.js';
+import { isDueAgain, categorizeChores } from '$lib/chore-logic.js';
+import { family as familyTable, chores as choresTable } from '$lib/server/schema/sqlite.js';
+import { addFamilyMember } from '$lib/server/queries/family.js';
+import { addChore, getChoresWithStatus } from '$lib/server/queries/chores.js';
+import { completeChore } from '$lib/server/queries/completions.js';
 
 function makeDb() {
 	return createTestDb(new Database(':memory:'));

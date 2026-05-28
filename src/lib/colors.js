@@ -1,20 +1,20 @@
 export const COLORS = [
-	{ key: 'rose',    hue: 350, label: 'Rose' },
-	{ key: 'pink',    hue: 322, label: 'Pink' },
+	{ key: 'rose', hue: 350, label: 'Rose' },
+	{ key: 'pink', hue: 322, label: 'Pink' },
 	{ key: 'fuchsia', hue: 293, label: 'Fuchsia' },
-	{ key: 'purple',  hue: 270, label: 'Purple' },
-	{ key: 'violet',  hue: 250, label: 'Violet' },
-	{ key: 'indigo',  hue: 232, label: 'Indigo' },
-	{ key: 'blue',    hue: 212, label: 'Blue' },
-	{ key: 'sky',     hue: 197, label: 'Sky' },
-	{ key: 'cyan',    hue: 182, label: 'Cyan' },
-	{ key: 'teal',    hue: 166, label: 'Teal' },
+	{ key: 'purple', hue: 270, label: 'Purple' },
+	{ key: 'violet', hue: 250, label: 'Violet' },
+	{ key: 'indigo', hue: 232, label: 'Indigo' },
+	{ key: 'blue', hue: 212, label: 'Blue' },
+	{ key: 'sky', hue: 197, label: 'Sky' },
+	{ key: 'cyan', hue: 182, label: 'Cyan' },
+	{ key: 'teal', hue: 166, label: 'Teal' },
 	{ key: 'emerald', hue: 150, label: 'Emerald' },
-	{ key: 'green',   hue: 130, label: 'Green' },
-	{ key: 'lime',    hue: 82,  label: 'Lime' },
-	{ key: 'yellow',  hue: 54,  label: 'Yellow' },
-	{ key: 'amber',   hue: 36,  label: 'Amber' },
-	{ key: 'orange',  hue: 18,  label: 'Orange' },
+	{ key: 'green', hue: 130, label: 'Green' },
+	{ key: 'lime', hue: 82, label: 'Lime' },
+	{ key: 'yellow', hue: 54, label: 'Yellow' },
+	{ key: 'amber', hue: 36, label: 'Amber' },
+	{ key: 'orange', hue: 18, label: 'Orange' }
 ];
 
 export const DEFAULT_HUE = 215;
@@ -37,7 +37,7 @@ export function buildCssVars(hue) {
 		`--c-member-border: hsl(${hue} 55% 72%)`,
 		`--c-member-text: hsl(${hue} 60% 28%)`,
 		// Swatch pastel preview (used on manage-family page)
-		`--c-swatch: hsl(${hue} 65% 80%)`,
+		`--c-swatch: hsl(${hue} 65% 80%)`
 	].join('; ');
 }
 

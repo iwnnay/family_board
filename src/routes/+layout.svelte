@@ -1,4 +1,5 @@
 <script>
+	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
@@ -92,18 +93,6 @@
 </div>
 
 <style>
-	:global(*, *::before, *::after) {
-		box-sizing: border-box;
-		margin: 0;
-		padding: 0;
-	}
-
-	:global(body) {
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		background: #f3f4f6;
-		color: #1f2937;
-	}
-
 	.app {
 		display: flex;
 		min-height: 100vh;

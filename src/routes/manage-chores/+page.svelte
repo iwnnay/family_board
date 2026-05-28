@@ -1,5 +1,6 @@
 <script>
 	import { enhance } from '$app/forms';
+	import FeedbackMessage from '$lib/components/FeedbackMessage.svelte';
 
 	let { data, form } = $props();
 
@@ -25,7 +26,7 @@
 
 	function handleFileChange(e) {
 		const file = e.target.files?.[0];
-		if (!file) return;
+		if (!file) {return;}
 		previewUrl = URL.createObjectURL(file);
 		removeImage = false;
 	}
@@ -33,8 +34,7 @@
 	function handleDrop(e) {
 		dragOver = false;
 		const file = e.dataTransfer.files?.[0];
-		if (!file || !file.type.startsWith('image/')) return;
-		// Reflect the dropped file onto the hidden input
+		if (!file || !file.type.startsWith('image/')) {return;}
 		const dt = new DataTransfer();
 		dt.items.add(file);
 		fileInput.files = dt.files;
@@ -45,46 +45,44 @@
 	function clearImage() {
 		previewUrl = null;
 		removeImage = true;
-		if (fileInput) fileInput.value = '';
+		if (fileInput) {fileInput.value = '';}
 	}
 
 	let fileInput = $state(null);
 	let formValues = $derived(editing ?? { id: '', name: '', frequency: 'none', suggested_day: '', image: null });
 </script>
 
-<h1>Manage Chores</h1>
+<h1 class="page-title-lg">Manage Chores</h1>
 
 <div class="form-card">
-	<h2>{editing ? 'Edit Chore' : 'Add Chore'}</h2>
+	<h2 class="section-heading">{editing ? 'Edit Chore' : 'Add Chore'}</h2>
 
-	{#if form?.error}
-		<div class="error">{form.error}</div>
-	{/if}
+	<FeedbackMessage error={form?.error ?? ''} />
 
 	<form
 		method="POST"
 		action="?/save"
 		enctype="multipart/form-data"
-		use:enhance={() => {
-			return async ({ update }) => {
+		use:enhance={() =>
+			async ({ update }) => {
 				await update();
 				editing = null;
 				previewUrl = null;
 				removeImage = false;
-			};
-		}}
+			}}
+		class="stack"
 	>
 		<input type="hidden" name="id" value={formValues.id} />
 		<input type="hidden" name="remove_image" value={removeImage ? '1' : '0'} />
 
 		<div class="field">
-			<label for="name">Name</label>
-			<input id="name" name="name" type="text" value={formValues.name} required placeholder="e.g. Vacuum living room" />
+			<label class="field-label" for="name">Name</label>
+			<input class="input input-blue" id="name" name="name" type="text" value={formValues.name} required placeholder="e.g. Vacuum living room" />
 		</div>
 
 		<div class="field">
-			<label for="frequency">Frequency</label>
-			<select id="frequency" name="frequency">
+			<label class="field-label" for="frequency">Frequency</label>
+			<select class="input input-blue" id="frequency" name="frequency">
 				{#each FREQUENCIES as freq}
 					<option value={freq} selected={formValues.frequency === freq}>
 						{freq.charAt(0).toUpperCase() + freq.slice(1)}
@@ -94,12 +92,12 @@
 		</div>
 
 		<div class="field">
-			<label for="suggested_day">Suggested Day <span class="optional">(optional)</span></label>
-			<input id="suggested_day" name="suggested_day" type="text" value={formValues.suggested_day ?? ''} placeholder="e.g. Monday, weekends..." />
+			<label class="field-label" for="suggested_day">Suggested Day <span class="optional">(optional)</span></label>
+			<input class="input input-blue" id="suggested_day" name="suggested_day" type="text" value={formValues.suggested_day ?? ''} placeholder="e.g. Monday, weekends..." />
 		</div>
 
 		<div class="field">
-			<label>Image <span class="optional">(optional)</span></label>
+			<span class="field-label">Image <span class="optional">(optional)</span></span>
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
 				class="dropzone"
@@ -140,18 +138,18 @@
 		</div>
 
 		<div class="actions">
-			<button type="submit" class="btn-primary">
+			<button type="submit" class="btn btn-blue">
 				{editing ? 'Update Chore' : 'Add Chore'}
 			</button>
 			{#if editing}
-				<button type="button" class="btn-secondary" onclick={cancelEdit}>Cancel</button>
+				<button type="button" class="btn btn-cancel" onclick={cancelEdit}>Cancel</button>
 			{/if}
 		</div>
 	</form>
 </div>
 
 <div class="chores-list">
-	<h2>All Chores ({data.chores.length})</h2>
+	<h2 class="section-heading">All Chores ({data.chores.length})</h2>
 
 	{#if data.chores.length === 0}
 		<p class="empty">No chores yet. Add one above!</p>
@@ -169,13 +167,13 @@
 					{/if}
 				</div>
 				<div class="chore-actions">
-					<button class="btn-edit" onclick={() => startEdit(chore)}>Edit</button>
+					<button class="btn-reset" onclick={() => startEdit(chore)}>Edit</button>
 					<form
 						method="POST"
 						action="?/delete"
 						use:enhance
 						onsubmit={(e) => {
-							if (!confirm(`Delete "${chore.name}"?`)) e.preventDefault();
+							if (!confirm(`Delete "${chore.name}"?`)) {e.preventDefault();}
 						}}
 					>
 						<input type="hidden" name="id" value={chore.id} />
@@ -188,40 +186,18 @@
 </div>
 
 <style>
-	h1 {
-		font-size: 1.75rem;
-		font-weight: 700;
-		color: #1e293b;
-		margin-bottom: 1.5rem;
-	}
-
-	h2 {
-		font-size: 1.1rem;
-		font-weight: 600;
-		color: #374151;
-		margin-bottom: 1rem;
-	}
-
 	.form-card {
-		background: #fff;
-		border-radius: 12px;
-		padding: 1.5rem;
-		border: 1px solid #e2e8f0;
-		margin-bottom: 2rem;
 		max-width: 480px;
 	}
 
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 0.35rem;
-		margin-bottom: 1rem;
+	.chores-list {
+		max-width: 600px;
 	}
 
-	label {
-		font-size: 0.85rem;
-		font-weight: 500;
-		color: #374151;
+	.stack {
+		display: flex;
+		flex-direction: column;
+		gap: 0.85rem;
 	}
 
 	.optional {
@@ -229,28 +205,10 @@
 		font-weight: 400;
 	}
 
-	input[type='text'],
-	select {
-		padding: 0.5rem 0.75rem;
-		border: 1px solid #cbd5e1;
-		border-radius: 8px;
-		font-size: 0.95rem;
-		color: #1e293b;
-		background: #fff;
-	}
-
-	input[type='text']:focus,
-	select:focus {
-		outline: none;
-		border-color: #3b82f6;
-		box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-	}
-
 	.hidden-input {
 		display: none;
 	}
 
-	/* Dropzone */
 	.dropzone {
 		border: 2px dashed #cbd5e1;
 		border-radius: 10px;
@@ -312,50 +270,10 @@
 		background: rgba(0, 0, 0, 0.75);
 	}
 
-	/* Actions */
 	.actions {
 		display: flex;
 		gap: 0.5rem;
 		margin-top: 0.5rem;
-	}
-
-	.btn-primary {
-		padding: 0.5rem 1.25rem;
-		background: #2563eb;
-		color: #fff;
-		border: none;
-		border-radius: 8px;
-		font-size: 0.9rem;
-		font-weight: 600;
-		cursor: pointer;
-	}
-
-	.btn-primary:hover {
-		background: #1d4ed8;
-	}
-
-	.btn-secondary {
-		padding: 0.5rem 1rem;
-		background: #f1f5f9;
-		color: #475569;
-		border: 1px solid #cbd5e1;
-		border-radius: 8px;
-		font-size: 0.9rem;
-		cursor: pointer;
-	}
-
-	.error {
-		background: #fef2f2;
-		color: #dc2626;
-		padding: 0.5rem 0.75rem;
-		border-radius: 6px;
-		font-size: 0.85rem;
-		margin-bottom: 1rem;
-	}
-
-	/* List */
-	.chores-list {
-		max-width: 600px;
 	}
 
 	.chore-row {
@@ -432,48 +350,12 @@
 		flex-shrink: 0;
 	}
 
-	.btn-edit {
-		padding: 0.3rem 0.75rem;
-		background: #f1f5f9;
-		border: 1px solid #cbd5e1;
-		border-radius: 6px;
-		font-size: 0.82rem;
-		cursor: pointer;
-		color: #475569;
-	}
-
-	.btn-edit:hover {
-		background: #e2e8f0;
-	}
-
-	.btn-delete {
-		padding: 0.3rem 0.75rem;
-		background: #fef2f2;
-		border: 1px solid #fecaca;
-		border-radius: 6px;
-		font-size: 0.82rem;
-		cursor: pointer;
-		color: #dc2626;
-	}
-
-	.btn-delete:hover {
-		background: #fee2e2;
-	}
-
 	.empty {
 		color: #94a3b8;
 		font-style: italic;
 	}
 
 	@media (max-width: 640px) {
-		h1 {
-			font-size: 1.35rem;
-		}
-
-		.form-card {
-			padding: 1rem;
-		}
-
 		.chore-row {
 			flex-wrap: wrap;
 		}
