@@ -1,13 +1,4 @@
-import {
-	getCalendarEntries,
-	getCalendarEntryById,
-	getLocations,
-	createCalendarEntry,
-	updateCalendarEntry,
-	deleteCalendarEntry,
-	duplicateCalendarEntry,
-	createLocation
-} from '$lib/server/db';
+import { getCalendarEntries, getLocations, createCalendarEntry, updateCalendarEntry, deleteCalendarEntry, duplicateCalendarEntry, createLocation, healCalendarSeries } from '$lib/server/db';
 import { toUtcString } from '$lib/time.js';
 import { fail } from '@sveltejs/kit';
 
@@ -53,27 +44,52 @@ export const actions = {
 		const id = data.get('id');
 		const title = (data.get('title') ?? '').toString().trim();
 		const location_id = Number(data.get('location_id') || 0) || null;
-		const start_time = (data.get('start_time') ?? '').toString();
-		const duration_minutes = Number(data.get('duration_minutes') || 60);
 		const description = (data.get('description') ?? '').toString().trim() || null;
+		const all_day = data.get('all_day') === 'on' || data.get('all_day') === '1';
+		const recurrence = (data.get('recurrence') ?? 'none').toString();
+		// Only meaningful for recurring events; an empty input means "forever".
+		const recurrence_end = recurrence === 'none' ? null : (data.get('recurrence_end') ?? '').toString() || null;
 
 		if (!title) {
 			return fail(400, { error: 'Title is required' });
 		}
-		if (!start_time) {
-			return fail(400, { error: 'Start time is required' });
+
+		let start_time;
+		let end_time;
+		if (all_day) {
+			// All-day dates are floating (no timezone): store the picked date(s) verbatim.
+			const date = (data.get('all_day_date') ?? '').toString();
+			if (!date) {
+				return fail(400, { error: 'Date is required' });
+			}
+			const endDate = (data.get('all_day_end_date') ?? '').toString() || date;
+			start_time = `${date} 00:00:00`;
+			end_time = `${endDate} 00:00:00`;
+		} else {
+			// The datetime-local input sends 'YYYY-MM-DDTHH:MM' parsed as local time;
+			// toUtcString converts to UTC for storage.
+			const start_input = (data.get('start_time') ?? '').toString();
+			if (!start_input) {
+				return fail(400, { error: 'Start time is required' });
+			}
+			const duration_minutes = Number(data.get('duration_minutes') || 60);
+			const start = new Date(start_input);
+			const end = new Date(start.getTime() + duration_minutes * 60000);
+			start_time = toUtcString(start);
+			end_time = toUtcString(end);
 		}
 
-		// The HTML datetime-local input sends 'YYYY-MM-DDTHH:MM' which JS parses as local time;
-		// toUtcString converts to UTC for storage
-		const start = new Date(start_time);
-		const end = new Date(start.getTime() + duration_minutes * 60000);
+		const fields = { title, location_id, start_time, end_time, description, all_day: all_day ? 1 : 0, recurrence, recurrence_end };
 
 		if (id) {
-			await updateCalendarEntry(Number(id), { title, location_id, start_time: toUtcString(start), end_time: toUtcString(end), description });
+			await updateCalendarEntry(Number(id), fields);
 		} else {
-			await createCalendarEntry({ title, location_id, start_time: toUtcString(start), end_time: toUtcString(end), description, created_by: memberId });
+			await createCalendarEntry({ ...fields, created_by: memberId });
 		}
+
+		// Self-healing: a write is a good moment to roll every series' horizon
+		// forward. Cheap when nothing is due; the cron endpoint is the backstop.
+		await healCalendarSeries();
 
 		return { success: true };
 	},
@@ -97,15 +113,5 @@ export const actions = {
 		}
 		await duplicateCalendarEntry(Number(id), memberId);
 		return { success: true };
-	},
-
-	loadEntry: async ({ request }) => {
-		const data = await request.formData();
-		const id = data.get('id');
-		if (!id) {
-			return fail(400, { error: 'Missing id' });
-		}
-		const entry = await getCalendarEntryById(Number(id));
-		return { entry };
 	}
 };

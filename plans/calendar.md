@@ -92,3 +92,54 @@ The related info will be:
 - message: `{title} at {formatted_date_starttime}`
 
 Clicking the event will open the calendar entry modal.
+
+---
+
+# Recurring & All-Day Events  _(implemented)_
+
+## Recurring Events
+A calendar entry can repeat **weekly**, **every 2 weeks (biweekly)**, **monthly**, or **yearly** (or not at all). The "Repeats" dropdown on the create/update modal sets the rule, with an optional "Until" date.
+
+Recurrence is **materialised**: rather than storing a rule and expanding it on every read, each occurrence is a real row. All occurrences of one series share a `series_id` (the id of the first occurrence). The earliest occurrence is the *head* (`is_series_head = 1`) and carries the rule (`recurrence`, `recurrence_end`) plus `generated_until` — the point through which the series has been generated.
+
+- **Horizon** — series are generated **2 years** ahead (`HORIZON_DAYS = 730` in `queries/calendar.js`).
+- **Date math** — `src/lib/recurrence.js` (`generateOccurrences`) steps in UTC off the original anchor, so monthly/yearly clamp short months (Jan 31 → Feb 28) without drifting (the next month is still the 31st).
+- **Edit / delete are "this and following" only.** Editing or deleting a recurring occurrence splits the series at that point: the old series is capped at `recurrence_end = day before the occurrence`, and a new (edited) series is created from the occurrence forward. Earlier occurrences are never touched. Editing/deleting the **first** occurrence therefore rewrites/removes the whole series. The modal shows "↻ Changes apply to this and all future occurrences."
+
+### Self-healing horizon
+A background top-up keeps every series ~2 years ahead:
+- **On writes** — the calendar save action calls `healCalendarSeries()` (cheap; a no-op when nothing is due).
+- **Cron** — `GET|POST /api/calendar/heal` materialises any missing occurrences for every active series. Wire a **monthly** host cron to hit it.
+
+## All-Day Events
+An "All-day event" toggle on the modal hides the time/duration inputs and shows date pickers (with an optional end date for multi-day spans). All-day dates are **floating** — stored verbatim as `YYYY-MM-DD 00:00:00` and read straight from the string, with **no timezone conversion**, so the date never drifts. All-day events render as a solid banner pinned above timed events in the month grid and day list.
+
+---
+
+# Read-Only API  _(implemented)_
+
+A GET-only JSON feed for external consumers (the hub display). **A token is always required** — set `CALENDAR_API_TOKEN`; unset means every request is denied. Supply it via `Authorization: Bearer <token>` or `?token=<token>`. `/api` is whitelisted in `hooks.server.js` so it bypasses the session redirect; the shared guard is `src/lib/server/api-auth.js`.
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /api/calendar?days=14` | Upcoming occurrences (default 14 days; or `?from=YYYY-MM-DD&to=YYYY-MM-DD`). Returns `{ from, to, events[] }`. |
+| `GET\|POST /api/calendar/heal` | Roll every series forward to the horizon. Returns `{ ok, healed, generated }`. |
+
+Each event includes: `id, title, start_time, end_time, all_day, description, location_name, location_address, created_by, created_by_color, recurrence, is_recurring`.
+
+---
+
+## Database Tables (updated)
+
+`calendar_entries` gained the following columns:
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| all_day | int | 1 = all-day (floating `YYYY-MM-DD 00:00:00`) |
+| series_id | int | groups a recurring series; null = standalone one-off |
+| is_series_head | int | 1 on the first occurrence (carries the rule) |
+| recurrence | string | `none` \| `weekly` \| `biweekly` \| `monthly` \| `yearly` (denormalised onto every occurrence) |
+| recurrence_end | string | inclusive last date a series may produce an occurrence; null = horizon |
+| generated_until | string | start_time through which the series is materialised (head only) |
+
+New SQLite columns are backfilled automatically via `ensureColumn` in `db.js`; MySQL/prod needs `yarn db:push`.

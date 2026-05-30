@@ -110,7 +110,20 @@ export const calendar_entries = sqliteTable('calendar_entries', {
 	start_time: text('start_time').notNull(),
 	end_time: text('end_time').notNull(),
 	description: text('description'),
-	created_by: integer('created_by').references(() => family.id, { onDelete: 'set null' })
+	created_by: integer('created_by').references(() => family.id, { onDelete: 'set null' }),
+	// 1 = all-day event (no time-of-day; date stored as a floating 'YYYY-MM-DD 00:00:00')
+	all_day: integer('all_day').notNull().default(0),
+	// Recurring events are materialised as one row per occurrence. All rows of a
+	// series share series_id (null = standalone one-off). The earliest occurrence
+	// is the head (is_series_head = 1) and carries generated_until.
+	series_id: integer('series_id'),
+	is_series_head: integer('is_series_head').notNull().default(0),
+	// 'none' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' (denormalised onto every occurrence)
+	recurrence: text('recurrence').notNull().default('none'),
+	// inclusive last date the series may produce an occurrence ('YYYY-MM-DD'); null = forever
+	recurrence_end: text('recurrence_end'),
+	// start_time through which this series has been materialised (head row only)
+	generated_until: text('generated_until')
 });
 
 export const lists = sqliteTable('lists', {

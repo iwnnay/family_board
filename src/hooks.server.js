@@ -1,7 +1,10 @@
 import { redirect } from '@sveltejs/kit';
 import { getSession, deleteExpiredSessions, getUserFamilyMember, hasAnyUsers } from '$lib/server/db';
 
-const PUBLIC_PATHS = ['/login', '/setup', '/invite', '/health'];
+// `/api/*` is a read-only external feed guarded by its own token (see
+// routes/api/calendar) rather than the session cookie, so it bypasses the
+// login redirect below.
+const PUBLIC_PATHS = ['/login', '/setup', '/invite', '/health', '/api'];
 
 function isPublic(pathname) {
 	return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));

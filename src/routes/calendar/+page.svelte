@@ -1,10 +1,11 @@
 <script>
-	import { enhance, deserialize } from '$app/forms';
+	import { enhance } from '$app/forms';
 	import { invalidateAll, goto } from '$app/navigation';
 	import CalendarStrip from '$lib/CalendarStrip.svelte';
 	import LocationPicker from '$lib/LocationPicker.svelte';
 	import { fmtTime, fmtDateLong } from '$lib/format.js';
 	import { parseUtc } from '$lib/time.js';
+	import { RECURRENCE_OPTIONS } from '$lib/recurrence.js';
 
 	let { data } = $props();
 
@@ -29,7 +30,10 @@
 	function entriesForDay(day) {
 		if (!day) {return [];}
 		const dateStr = `${data.year}-${String(data.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-		return data.entries.filter((e) => e.start_time.startsWith(dateStr)).sort((a, b) => a.start_time.localeCompare(b.start_time));
+		// All-day events sort ahead of timed events; timed events sort by start.
+		return data.entries
+			.filter((e) => e.start_time.startsWith(dateStr))
+			.sort((a, b) => (b.all_day ? 1 : 0) - (a.all_day ? 1 : 0) || a.start_time.localeCompare(b.start_time));
 	}
 
 	function isToday(day) {
@@ -68,15 +72,15 @@
 		dayModal = { day, entries };
 	}
 
-	async function openEntry(entry) {
-		const res = await fetch(`?/loadEntry`, {
-			method: 'POST',
-			body: new URLSearchParams({ id: String(entry.id) }),
-			headers: { 'x-sveltekit-action': '1' }
-		});
-		const result = deserialize(await res.text());
-		activeEntry = result?.data?.entry ?? entry;
+	// Occurrences already carry every display field (location, description,
+	// colour, recurrence), so no refetch is needed — show the clicked occurrence.
+	function openEntry(entry) {
+		activeEntry = entry;
 		entryModal = 'show';
+	}
+
+	function dateInputValue(year, month, day) {
+		return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 	}
 
 	function openCreate(day = null) {
@@ -85,13 +89,14 @@
 		formLocationId = '';
 		formDescription = '';
 		formDuration = 60;
-		if (day) {
-			const dateStr = `${data.year}-${String(data.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-			formStartTime = `${dateStr}T09:00`;
-		} else {
-			const now = new Date();
-			formStartTime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T09:00`;
-		}
+		formAllDay = false;
+		formRecurrence = 'none';
+		formRecurrenceEnd = '';
+		const now = new Date();
+		const dateStr = day ? dateInputValue(data.year, data.month, day) : dateInputValue(now.getFullYear(), now.getMonth() + 1, now.getDate());
+		formStartTime = `${dateStr}T09:00`;
+		formAllDayDate = dateStr;
+		formAllDayEndDate = dateStr;
 		entryModal = 'form';
 	}
 
@@ -100,9 +105,19 @@
 		formTitle = entry.title;
 		formLocationId = entry.location_id ? String(entry.location_id) : '';
 		formDescription = entry.description ?? '';
-		formDuration = Math.round((parseUtc(entry.end_time) - parseUtc(entry.start_time)) / 60000);
-		const d = parseUtc(entry.start_time);
-		formStartTime = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+		formAllDay = !!entry.all_day;
+		formRecurrence = entry.recurrence ?? 'none';
+		formRecurrenceEnd = entry.recurrence_end ?? '';
+		// Editing a recurring event applies "this and following", so the clicked
+		// occurrence is both the split point and the form's starting values.
+		if (formAllDay) {
+			formAllDayDate = entry.start_time.slice(0, 10);
+			formAllDayEndDate = entry.end_time.slice(0, 10);
+		} else {
+			formDuration = Math.round((parseUtc(entry.end_time) - parseUtc(entry.start_time)) / 60000);
+			const d = parseUtc(entry.start_time);
+			formStartTime = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+		}
 		entryModal = 'form';
 	}
 
@@ -112,6 +127,11 @@
 	let formDescription = $state('');
 	let formStartTime = $state('');
 	let formDuration = $state(60);
+	let formAllDay = $state(false);
+	let formAllDayDate = $state('');
+	let formAllDayEndDate = $state('');
+	let formRecurrence = $state('none');
+	let formRecurrenceEnd = $state('');
 
 	const DURATION_OPTIONS = [
 		{ label: '15 min', value: 15 },
@@ -135,6 +155,26 @@
 
 	function fmtTimeRange(entry) {
 		return `${fmtDateLong(entry.start_time)}, ${fmtTime(entry.start_time)} – ${fmtTime(entry.end_time)}`;
+	}
+
+	// All-day dates are floating strings; format them without timezone conversion.
+	function fmtFloatingDate(dateStr) {
+		return new Date(`${dateStr.slice(0, 10)}T12:00:00`).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+	}
+
+	function fmtAllDayRange(entry) {
+		const start = entry.start_time.slice(0, 10);
+		const end = entry.end_time.slice(0, 10);
+		return start === end ? `${fmtFloatingDate(start)} · All day` : `${fmtFloatingDate(start)} – ${fmtFloatingDate(end)} · All day`;
+	}
+
+	function recurrenceLabel(entry) {
+		if (!entry.recurrence || entry.recurrence === 'none') {
+			return '';
+		}
+		const opt = RECURRENCE_OPTIONS.find((o) => o.value === entry.recurrence);
+		const base = opt ? opt.label : '';
+		return entry.recurrence_end ? `${base} until ${fmtFloatingDate(entry.recurrence_end)}` : base;
 	}
 
 	function mapsUrl(address) {
@@ -171,7 +211,9 @@
 			{#if day}
 				<span class="cal-day-num">{day}</span>
 				{#each entriesForDay(day) as entry}
-					<span class="cal-entry-pill">{entry.title}</span>
+					<span class="cal-entry-pill" class:all-day={entry.all_day}>
+						{#if entry.is_recurring}<span class="recur-dot" title="Repeats">↻</span>{/if}{entry.title}
+					</span>
 				{/each}
 			{/if}
 		</div>
@@ -209,8 +251,8 @@
 								dayModal = null;
 							}}
 						>
-							<span class="day-entry-time">{fmtTime(entry.start_time)} – {fmtTime(entry.end_time)}</span>
-							<span class="day-entry-title">{entry.title}</span>
+							<span class="day-entry-time">{entry.all_day ? 'All day' : `${fmtTime(entry.start_time)} – ${fmtTime(entry.end_time)}`}</span>
+							<span class="day-entry-title">{#if entry.is_recurring}<span class="recur-dot" title="Repeats">↻</span> {/if}{entry.title}</span>
 							{#if entry.location_name}
 								<span class="day-entry-loc">📍 {entry.location_name}</span>
 							{/if}
@@ -261,7 +303,10 @@
 				</div>
 			</div>
 			<div class="entry-body">
-				<p class="entry-time-range">{fmtTimeRange(activeEntry)}</p>
+				<p class="entry-time-range">{activeEntry.all_day ? fmtAllDayRange(activeEntry) : fmtTimeRange(activeEntry)}</p>
+				{#if recurrenceLabel(activeEntry)}
+					<p class="entry-recurrence">↻ {recurrenceLabel(activeEntry)}</p>
+				{/if}
 				{#if activeEntry.location_name}
 					<a class="entry-location" href={mapsUrl(activeEntry.location_address ?? activeEntry.location_name)} target="_blank" rel="noopener noreferrer">
 						📍 {activeEntry.location_name}
@@ -300,7 +345,8 @@
 								type="submit"
 								class="btn-ghost btn-danger"
 								onclick={(e) => {
-									if (!confirm('Delete this event?')) {e.preventDefault();}
+									const msg = activeEntry.is_recurring ? 'Delete this and all future occurrences?' : 'Delete this event?';
+									if (!confirm(msg)) {e.preventDefault();}
 								}}
 							>
 								🗑 Delete
@@ -327,24 +373,63 @@
 					<input type="hidden" name="id" value={activeEntry.id} />
 				{/if}
 
+				{#if activeEntry?.is_recurring}
+					<p class="series-note">↻ Changes apply to this and all future occurrences.</p>
+				{/if}
+
 				<div class="field">
 					<label for="ev-title">Title</label>
 					<input id="ev-title" class="input" type="text" name="title" bind:value={formTitle} required />
 				</div>
 
+				<label class="checkbox-field">
+					<input type="checkbox" name="all_day" bind:checked={formAllDay} />
+					<span>All-day event</span>
+				</label>
+
+				{#if formAllDay}
+					<div class="field-row">
+						<div class="field">
+							<label for="ev-ad-start">Date</label>
+							<input id="ev-ad-start" class="input" type="date" name="all_day_date" bind:value={formAllDayDate} required />
+						</div>
+						<div class="field">
+							<label for="ev-ad-end">End date <span class="opt">(optional)</span></label>
+							<input id="ev-ad-end" class="input" type="date" name="all_day_end_date" bind:value={formAllDayEndDate} min={formAllDayDate} />
+						</div>
+					</div>
+				{:else}
+					<div class="field-row">
+						<div class="field">
+							<label for="ev-start">Date & Time</label>
+							<input id="ev-start" class="input" type="datetime-local" name="start_time" bind:value={formStartTime} required />
+						</div>
+						<div class="field">
+							<label for="ev-dur">Duration</label>
+							<select id="ev-dur" class="input" name="duration_minutes" bind:value={formDuration}>
+								{#each DURATION_OPTIONS as opt}
+									<option value={opt.value}>{opt.label}</option>
+								{/each}
+							</select>
+						</div>
+					</div>
+				{/if}
+
 				<div class="field-row">
 					<div class="field">
-						<label for="ev-start">Date & Time</label>
-						<input id="ev-start" class="input" type="datetime-local" name="start_time" bind:value={formStartTime} required />
-					</div>
-					<div class="field">
-						<label for="ev-dur">Duration</label>
-						<select id="ev-dur" class="input" name="duration_minutes" bind:value={formDuration}>
-							{#each DURATION_OPTIONS as opt}
+						<label for="ev-recur">Repeats</label>
+						<select id="ev-recur" class="input" name="recurrence" bind:value={formRecurrence}>
+							{#each RECURRENCE_OPTIONS as opt}
 								<option value={opt.value}>{opt.label}</option>
 							{/each}
 						</select>
 					</div>
+					{#if formRecurrence !== 'none'}
+						<div class="field">
+							<label for="ev-recur-end">Until <span class="opt">(optional)</span></label>
+							<input id="ev-recur-end" class="input" type="date" name="recurrence_end" bind:value={formRecurrenceEnd} min={formAllDay ? formAllDayDate : formStartTime.slice(0, 10)} />
+						</div>
+					{/if}
 				</div>
 
 				<div class="field">
@@ -472,6 +557,35 @@
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
+	}
+
+	/* All-day events read as a solid banner to distinguish them from timed pills. */
+	.cal-entry-pill.all-day {
+		background: #4f46e5;
+		color: #fff;
+		font-weight: 600;
+	}
+
+	.recur-dot {
+		font-size: 0.62rem;
+		opacity: 0.8;
+		margin-right: 1px;
+	}
+
+	.entry-recurrence {
+		font-size: 0.82rem;
+		color: #4f46e5;
+		font-weight: 500;
+	}
+
+	.series-note {
+		margin: 0;
+		padding: 0.5rem 0.65rem;
+		background: #eef2ff;
+		border: 1px solid #c7d2fe;
+		border-radius: 6px;
+		font-size: 0.78rem;
+		color: #4338ca;
 	}
 
 	/* ── modals ── */
@@ -631,6 +745,28 @@
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 0.75rem;
+	}
+
+	.checkbox-field {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: #374151;
+		cursor: pointer;
+	}
+
+	.checkbox-field input {
+		width: 1rem;
+		height: 1rem;
+		cursor: pointer;
+	}
+
+	.opt {
+		font-weight: 400;
+		color: #9ca3af;
+		font-size: 0.72rem;
 	}
 
 	label {

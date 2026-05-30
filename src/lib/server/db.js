@@ -102,13 +102,19 @@ const SQLITE_SETUP_SQL = `
     is_deleted INTEGER NOT NULL DEFAULT 0
   );
   CREATE TABLE IF NOT EXISTS calendar_entries (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    title       TEXT NOT NULL,
-    location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL,
-    start_time  TEXT NOT NULL,
-    end_time    TEXT NOT NULL,
-    description TEXT,
-    created_by  INTEGER REFERENCES family(id) ON DELETE SET NULL
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    title           TEXT NOT NULL,
+    location_id     INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+    start_time      TEXT NOT NULL,
+    end_time        TEXT NOT NULL,
+    description     TEXT,
+    created_by      INTEGER REFERENCES family(id) ON DELETE SET NULL,
+    all_day         INTEGER NOT NULL DEFAULT 0,
+    series_id       INTEGER,
+    is_series_head  INTEGER NOT NULL DEFAULT 0,
+    recurrence      TEXT NOT NULL DEFAULT 'none',
+    recurrence_end  TEXT,
+    generated_until TEXT
   );
   CREATE TABLE IF NOT EXISTS lists (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -126,6 +132,27 @@ const SQLITE_SETUP_SQL = `
 `;
 
 /**
+ * Adds a column to a SQLite table only when it does not already exist, so
+ * existing dev databases pick up new columns without a migration step.
+ * (CREATE TABLE IF NOT EXISTS never alters an already-created table.)
+ */
+function ensureColumn(sqliteDb, table, column, definition) {
+	const cols = sqliteDb.prepare(`PRAGMA table_info(${table})`).all();
+	if (cols.some((c) => c.name === column)) {
+		return;
+	}
+	try {
+		sqliteDb.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+	} catch (err) {
+		// The PRAGMA check isn't atomic across processes (parallel test workers
+		// share the dev db file); a concurrent add is harmless.
+		if (!String(err?.message).includes('duplicate column name')) {
+			throw err;
+		}
+	}
+}
+
+/**
  * Creates a Drizzle instance from a raw better-sqlite3 Database.
  * Runs CREATE TABLE IF NOT EXISTS so the dev database is always ready.
  * Pass `new Database(':memory:')` in tests for an isolated in-memory database.
@@ -134,6 +161,13 @@ export function createTestDb(sqliteDb) {
 	sqliteDb.pragma('journal_mode = WAL');
 	sqliteDb.pragma('foreign_keys = ON');
 	sqliteDb.exec(SQLITE_SETUP_SQL);
+	// Backfill columns added after a database was first created.
+	ensureColumn(sqliteDb, 'calendar_entries', 'all_day', 'INTEGER NOT NULL DEFAULT 0');
+	ensureColumn(sqliteDb, 'calendar_entries', 'series_id', 'INTEGER');
+	ensureColumn(sqliteDb, 'calendar_entries', 'is_series_head', 'INTEGER NOT NULL DEFAULT 0');
+	ensureColumn(sqliteDb, 'calendar_entries', 'recurrence', "TEXT NOT NULL DEFAULT 'none'");
+	ensureColumn(sqliteDb, 'calendar_entries', 'recurrence_end', 'TEXT');
+	ensureColumn(sqliteDb, 'calendar_entries', 'generated_until', 'TEXT');
 	return sqliteDrizzle(sqliteDb, { schema: sqliteSchema });
 }
 
@@ -192,6 +226,7 @@ export const createCalendarEntry = (...a) => calendarQ.createCalendarEntry(db, .
 export const updateCalendarEntry = (...a) => calendarQ.updateCalendarEntry(db, ...a);
 export const deleteCalendarEntry = (...a) => calendarQ.deleteCalendarEntry(db, ...a);
 export const duplicateCalendarEntry = (...a) => calendarQ.duplicateCalendarEntry(db, ...a);
+export const healCalendarSeries = (...a) => calendarQ.healCalendarSeries(db, ...a);
 
 export const getNotes = (...a) => notesQ.getNotes(db, ...a);
 export const getNoteWithBodies = (...a) => notesQ.getNoteWithBodies(db, ...a);

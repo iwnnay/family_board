@@ -112,7 +112,20 @@ export const calendar_entries = mysqlTable('calendar_entries', {
 	start_time: varchar('start_time', { length: 30 }).notNull(),
 	end_time: varchar('end_time', { length: 30 }).notNull(),
 	description: varchar('description', { length: 2000 }),
-	created_by: int('created_by').references(() => family.id, { onDelete: 'set null' })
+	created_by: int('created_by').references(() => family.id, { onDelete: 'set null' }),
+	// 1 = all-day event (no time-of-day; date stored as a floating 'YYYY-MM-DD 00:00:00')
+	all_day: int('all_day').notNull().default(0),
+	// Recurring events are materialised as one row per occurrence. All rows of a
+	// series share series_id (null = standalone one-off). The earliest occurrence
+	// is the head (is_series_head = 1) and carries generated_until.
+	series_id: int('series_id'),
+	is_series_head: int('is_series_head').notNull().default(0),
+	// 'none' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' (denormalised onto every occurrence)
+	recurrence: varchar('recurrence', { length: 20 }).notNull().default('none'),
+	// inclusive last date the series may produce an occurrence ('YYYY-MM-DD'); null = forever
+	recurrence_end: varchar('recurrence_end', { length: 30 }),
+	// start_time through which this series has been materialised (head row only)
+	generated_until: varchar('generated_until', { length: 30 })
 });
 
 export const lists = mysqlTable('lists', {
