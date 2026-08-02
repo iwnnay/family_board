@@ -140,5 +140,26 @@ export const list_items = sqliteTable('list_items', {
 		.notNull()
 		.references(() => lists.id, { onDelete: 'cascade' }),
 	item: text('item').notNull(),
-	completed_at: text('completed_at')
+	completed_at: text('completed_at'),
+	// Floating 'YYYY-MM-DD' (no time-of-day) so a due date never shifts timezone.
+	due_date: text('due_date'),
+	// 'high' | 'medium' | 'low' | 'none'
+	priority: text('priority').notNull().default('none'),
+	notes: text('notes'),
+	assigned_to: integer('assigned_to').references(() => family.id, { onDelete: 'set null' }),
+	created_by: integer('created_by').references(() => family.id, { onDelete: 'set null' }),
+	// Filename under static/store/images/lists (see server/images.js)
+	image: text('image'),
+	// Nullable so rows created before this column existed stay valid.
+	created_at: text('created_at')
+});
+
+export const list_item_steps = sqliteTable('list_item_steps', {
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	item_id: integer('item_id')
+		.notNull()
+		.references(() => list_items.id, { onDelete: 'cascade' }),
+	step: text('step').notNull(),
+	completed_at: text('completed_at'),
+	sort_order: integer('sort_order').notNull().default(0)
 });

@@ -127,7 +127,21 @@ const SQLITE_SETUP_SQL = `
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     list_id      INTEGER NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
     item         TEXT NOT NULL,
-    completed_at TEXT
+    completed_at TEXT,
+    due_date     TEXT,
+    priority     TEXT NOT NULL DEFAULT 'none',
+    notes        TEXT,
+    assigned_to  INTEGER REFERENCES family(id) ON DELETE SET NULL,
+    created_by   INTEGER REFERENCES family(id) ON DELETE SET NULL,
+    image        TEXT,
+    created_at   TEXT
+  );
+  CREATE TABLE IF NOT EXISTS list_item_steps (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    item_id      INTEGER NOT NULL REFERENCES list_items(id) ON DELETE CASCADE,
+    step         TEXT NOT NULL,
+    completed_at TEXT,
+    sort_order   INTEGER NOT NULL DEFAULT 0
   );
 `;
 
@@ -168,6 +182,13 @@ export function createTestDb(sqliteDb) {
 	ensureColumn(sqliteDb, 'calendar_entries', 'recurrence', "TEXT NOT NULL DEFAULT 'none'");
 	ensureColumn(sqliteDb, 'calendar_entries', 'recurrence_end', 'TEXT');
 	ensureColumn(sqliteDb, 'calendar_entries', 'generated_until', 'TEXT');
+	ensureColumn(sqliteDb, 'list_items', 'due_date', 'TEXT');
+	ensureColumn(sqliteDb, 'list_items', 'priority', "TEXT NOT NULL DEFAULT 'none'");
+	ensureColumn(sqliteDb, 'list_items', 'notes', 'TEXT');
+	ensureColumn(sqliteDb, 'list_items', 'assigned_to', 'INTEGER REFERENCES family(id)');
+	ensureColumn(sqliteDb, 'list_items', 'created_by', 'INTEGER REFERENCES family(id)');
+	ensureColumn(sqliteDb, 'list_items', 'image', 'TEXT');
+	ensureColumn(sqliteDb, 'list_items', 'created_at', 'TEXT');
 	return sqliteDrizzle(sqliteDb, { schema: sqliteSchema });
 }
 
@@ -239,9 +260,16 @@ export const getRecentEvents = (...a) => notesQ.getRecentEvents(db, ...a);
 export const getLists = (...a) => listsQ.getLists(db, ...a);
 export const createList = (...a) => listsQ.createList(db, ...a);
 export const deleteList = (...a) => listsQ.deleteList(db, ...a);
+export const toggleListFavorite = (...a) => listsQ.toggleListFavorite(db, ...a);
+export const getListItem = (...a) => listsQ.getListItem(db, ...a);
 export const addListItem = (...a) => listsQ.addListItem(db, ...a);
+export const updateListItem = (...a) => listsQ.updateListItem(db, ...a);
+export const deleteListItem = (...a) => listsQ.deleteListItem(db, ...a);
 export const checkListItem = (...a) => listsQ.checkListItem(db, ...a);
 export const restoreListItem = (...a) => listsQ.restoreListItem(db, ...a);
+export const setListItemSteps = (...a) => listsQ.setListItemSteps(db, ...a);
+export const toggleListItemStep = (...a) => listsQ.toggleListItemStep(db, ...a);
+export const getListImages = (...a) => listsQ.getListImages(db, ...a);
 
 export const hasAnyUsers = () => authQ.hasAnyUsers(db);
 export const createUser = (...a) => authQ.createUser(db, ...a);

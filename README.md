@@ -93,9 +93,28 @@ Each family member picks one of 16 pastel hues on the Manage Family page. That h
 
 All derived colours (nav bg, border, text, light background) are computed from the hue in `src/lib/colors.js` via `buildCssVars(hue)`, applied as CSS custom properties on the root layout element.
 
-### Chore Images
+### Images
 
-Images uploaded on the Manage Chores page are automatically center-cropped and resized to **150 × 150 px WebP** by `sharp` before being saved to `static/store/images/chores/`. Old images are deleted when replaced or when the chore is deleted.
+`src/lib/server/images.js` converts every upload to WebP with `sharp` and returns a filename that is stored on the row.
+
+| Source | Treatment | Location |
+|---|---|---|
+| Manage Chores | center-cropped to **150 × 150** | `static/store/images/chores/` |
+| List item photo | EXIF-rotated, fit **inside 800 × 800** (never enlarged) | `static/store/images/lists/` |
+
+Uploads over 5 MB are rejected. Old files are deleted when replaced, when the row is deleted, and — for list items — when the whole list is deleted.
+
+### Lists
+
+Lists tile the page in a responsive grid (they flow onto new rows and the page scrolls down; one column on mobile). Each list can be favourited to sort it to the top and collapsed to just its header.
+
+Items carry a **due date**, **priority**, **assignee**, **notes**, ordered **steps**, and an optional **photo**. Active items sort by due date ascending (undated last), then priority high → medium → low, then insertion order.
+
+- **Favourites** are per family member, stored in the shared `user_pins` table with `rel_type = 'list'`.
+- **Collapsed state** is a per-browser preference in `localStorage`, not shared family state.
+- **Assignee** defaults to whoever added the item.
+- **Natural-language due dates** — typing `Clean the gutter by Thursday` files the item as "Clean the gutter" due the next calendar Thursday. The grammar lives in `src/lib/due-date.js` and is designed to be grown; it currently reads weekdays, `today`/`tonight`/`tomorrow`, `next week`/`next month`, and `in N days/weeks`. It stays deliberately conservative — a bare weekday only counts at the end of the item, and abbreviations need a lead-in word — so ordinary wording like "Buy Sunday roast" is left alone.
+- Sorting and due-date presentation are pure functions in `src/lib/list-items.js`, shared by the server and the UI.
 
 ### Calendar
 
@@ -143,5 +162,5 @@ const { lastInsertRowid: id } = addChore(db, 'My chore', 'weekly', null, null);
 - **Port** — dev server is pinned to `5200` in `vite.config.js` (`strictPort: true`). Use `5201` for any ad-hoc testing so the two don't collide.
 - **Migrations** — `runMigrations()` in `schema.js` uses `PRAGMA table_info` checks so it is safe to run on existing databases.
 - **No ORM** — queries are plain SQL in the `queries/` modules. Each function takes a `db` (better-sqlite3 instance) as its first argument, which is what makes them independently testable.
-- **Cookie** — the selected family member is stored in a `member_id` cookie (1-year expiry). The layout server load reads it and passes `currentMember` down to every page via SvelteKit's data cascade.
+- **Current member** — `hooks.server.js` resolves the logged-in user's family member from their session and puts it on `locals.currentMember`, which the layout load passes down to every page. Some older page loads still read a legacy `member_id` cookie that nothing sets any more; prefer `locals.currentMember`.
 - **`CALENDAR_API_TOKEN`** — required to use the `/api/calendar` feed and `/api/calendar/heal` cron endpoint. When unset, those endpoints deny all requests (503). Set it in dev too if you're exercising the API; the [hub](../hub) must use the same value as its `FAMILY_BOARD_TOKEN`.

@@ -142,5 +142,26 @@ export const list_items = mysqlTable('list_items', {
 		.notNull()
 		.references(() => lists.id, { onDelete: 'cascade' }),
 	item: varchar('item', { length: 500 }).notNull(),
-	completed_at: varchar('completed_at', { length: 30 })
+	completed_at: varchar('completed_at', { length: 30 }),
+	// Floating 'YYYY-MM-DD' (no time-of-day) so a due date never shifts timezone.
+	due_date: varchar('due_date', { length: 10 }),
+	// 'high' | 'medium' | 'low' | 'none'
+	priority: varchar('priority', { length: 10 }).notNull().default('none'),
+	notes: varchar('notes', { length: 2000 }),
+	assigned_to: int('assigned_to').references(() => family.id, { onDelete: 'set null' }),
+	created_by: int('created_by').references(() => family.id, { onDelete: 'set null' }),
+	// Filename under static/store/images/lists (see server/images.js)
+	image: varchar('image', { length: 255 }),
+	// Nullable so rows created before this column existed stay valid.
+	created_at: varchar('created_at', { length: 30 })
+});
+
+export const list_item_steps = mysqlTable('list_item_steps', {
+	id: int('id').primaryKey().autoincrement(),
+	item_id: int('item_id')
+		.notNull()
+		.references(() => list_items.id, { onDelete: 'cascade' }),
+	step: varchar('step', { length: 500 }).notNull(),
+	completed_at: varchar('completed_at', { length: 30 }),
+	sort_order: int('sort_order').notNull().default(0)
 });
